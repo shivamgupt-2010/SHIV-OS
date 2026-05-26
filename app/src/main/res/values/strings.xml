@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">ShivAI</string>
+    <string name="accessibility_service_description">ShivAI Screen Intelligence and Automation Layer</string>
+</resources>

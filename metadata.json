@@ -1,0 +1,6 @@
+{
+  "name": "ShivAI",
+  "description": "Personal AI operating system",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
