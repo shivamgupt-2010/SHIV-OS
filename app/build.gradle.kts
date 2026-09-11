@@ -1,5 +1,6 @@
 plugins {
   alias(libs.plugins.android.application)
+  alias(libs.plugins.kotlin.android)
   alias(libs.plugins.kotlin.compose)
   alias(libs.plugins.kotlin.serialization)
   alias(libs.plugins.google.devtools.ksp)
@@ -9,12 +10,12 @@ plugins {
 
 android {
   namespace = "com.example"
-  compileSdk = 35
+  compileSdk = 34
   
   defaultConfig {
     applicationId = "com.aistudio.shivai.vrmzkq"
     minSdk = 24
-    targetSdk = 35
+    targetSdk = 34
     versionCode = 1
     versionName = "1.0"
 
@@ -23,15 +24,20 @@ android {
 
   signingConfigs {
     create("release") {
-      val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/debug.keystore"
+      val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/release.keystore"
       storeFile = file(keystorePath)
-      storePassword = System.getenv("STORE_PASSWORD") ?: "android"
-      keyAlias = System.getenv("KEY_ALIAS") ?: "androiddebugkey"
-      keyPassword = System.getenv("KEY_PASSWORD") ?: "android"
+      storePassword = System.getenv("STORE_PASSWORD") ?: "shivaiandroid"
+      keyAlias = System.getenv("KEY_ALIAS") ?: "shivai"
+      keyPassword = System.getenv("KEY_PASSWORD") ?: "shivaiandroid"
+      enableV1Signing = true
+      enableV2Signing = true
     }
   }
 
   buildTypes {
+    debug {
+      signingConfig = signingConfigs.getByName("release")
+    }
     release {
       isCrunchPngs = false
       isMinifyEnabled = false
