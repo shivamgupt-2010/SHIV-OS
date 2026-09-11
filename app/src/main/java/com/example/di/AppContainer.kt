@@ -35,7 +35,7 @@ class AppContainer(private val context: Context) {
             AppDatabase::class.java,
             Constants.DATABASE_NAME
         )
-        .fallbackToDestructiveMigration(dropAllTables = true)
+        .fallbackToDestructiveMigration()
         .build()
     }
 

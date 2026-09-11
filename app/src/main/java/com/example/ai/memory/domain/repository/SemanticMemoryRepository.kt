@@ -39,12 +39,16 @@ class SemanticMemoryRepository(
     ): com.example.core.utils.Result<com.example.ai.shivai.model.ShivAIMemoryResponse>? {
         val res = shivAIClient?.remember(key, value, category, importance)
         if (res is com.example.core.utils.Result.Success) {
+            val now = System.currentTimeMillis()
             val localMemory = SemanticMemory(
                 id = res.data.id,
-                type = MemoryType.FACT,
+                type = MemoryType.PREFERENCE,
                 content = "$key: $value",
                 metadata = mapOf("key" to key, "category" to category, "cloud_id" to res.data.id),
-                importanceScore = importance.toFloat()
+                embedding = null,
+                importanceScore = importance.toFloat(),
+                lastAccessedAt = now,
+                createdAt = now
             )
             val entity = localMemory.toEntity()
             memoryDao.insertMemory(entity)
