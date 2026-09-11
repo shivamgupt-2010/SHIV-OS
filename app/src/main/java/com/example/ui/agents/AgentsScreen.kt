@@ -10,7 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -90,19 +90,17 @@ fun AgentsScreen(
         )
     )
 
-    var isParallelSwarmRunning by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
-    var swarmTaskTitle by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("Autonomous Device & Research Assistant") }
-    var parallelProgress by androidx.compose.runtime.remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+    var isParallelSwarmRunning by remember { mutableStateOf(false) }
+    var swarmTaskTitle by remember { mutableStateOf("Autonomous Device & Research Assistant") }
+    var parallelProgress by remember { mutableStateOf(0f) }
 
-    androidx.compose.runtime.LaunchedEffect(isParallelSwarmRunning) {
+    LaunchedEffect(isParallelSwarmRunning) {
         if (isParallelSwarmRunning) {
             parallelProgress = 0.1f
-            while (parallelProgress < 1f) {
+            while (parallelProgress < 1.0f) {
                 kotlinx.coroutines.delay(800)
-                parallelProgress += 0.2f
+                parallelProgress = (parallelProgress + 0.2f).coerceAtMost(1.0f)
             }
-            kotlinx.coroutines.delay(1000)
-            // Stays active in continuous swarm mode
         }
     }
 
