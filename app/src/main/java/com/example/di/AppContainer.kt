@@ -153,12 +153,21 @@ class AppContainer(private val context: Context) {
         com.example.core.overlay.OverlayAssistantManager(context, aiRuntimeManager, screenContextLayer)
     }
 
+    // ShivAI Cloud Engine
+    val shivAIPreferences: com.example.ai.shivai.config.ShivAIPreferences by lazy {
+        com.example.ai.shivai.config.ShivAIPreferences(context)
+    }
+
+    val shivAIClient: com.example.ai.shivai.client.ShivAIClient by lazy {
+        com.example.ai.shivai.client.ShivAIClient(shivAIPreferences)
+    }
+
     val permissionOrchestrator: com.example.core.permissions.PermissionOrchestrator by lazy {
         com.example.core.permissions.PermissionOrchestrator(context)
     }
 
     val aiRuntimeManager: com.example.core.runtime.AIRuntimeManager by lazy {
-        com.example.core.runtime.AIRuntimeManager(context, geminiClient)
+        com.example.core.runtime.AIRuntimeManager(context, geminiClient, shivAIClient)
     }
 
     val safeRuntimeManager: com.example.core.runtime.SafeRuntimeManager by lazy {
@@ -208,7 +217,11 @@ class AppContainer(private val context: Context) {
 
     // AI Memory & Intelligence Subsystems
     val semanticMemoryRepository: com.example.ai.memory.domain.repository.SemanticMemoryRepository by lazy {
-        com.example.ai.memory.domain.repository.SemanticMemoryRepository(appDatabase.semanticMemoryDao(), memorySecurityProvider)
+        com.example.ai.memory.domain.repository.SemanticMemoryRepository(
+            appDatabase.semanticMemoryDao(),
+            memorySecurityProvider,
+            shivAIClient = shivAIClient
+        )
     }
 
     val embeddingProvider: com.example.ai.memory.pipeline.EmbeddingProvider by lazy {
@@ -307,15 +320,15 @@ class AppContainer(private val context: Context) {
     }
 
     val chatAgent: com.example.ai.agent.ChatAgent by lazy {
-        com.example.ai.agent.ChatAgent(geminiClient, contextManager, chatRepository, toolRegistry)
+        com.example.ai.agent.ChatAgent(geminiClient, contextManager, chatRepository, toolRegistry, shivAIClient)
     }
 
     val studyAgent: com.example.ai.agent.StudyAgent by lazy {
-        com.example.ai.agent.StudyAgent(geminiClient, contextManager, chatRepository)
+        com.example.ai.agent.StudyAgent(geminiClient, contextManager, chatRepository, shivAIClient)
     }
 
     val codingAgent: com.example.ai.agent.CodingAgent by lazy {
-        com.example.ai.agent.CodingAgent(geminiClient, contextManager, chatRepository)
+        com.example.ai.agent.CodingAgent(geminiClient, contextManager, chatRepository, shivAIClient)
     }
 
     val aiStateManager: com.example.ai.state.AIStateManager by lazy {
@@ -323,6 +336,6 @@ class AppContainer(private val context: Context) {
     }
 
     val centralOrchestrator: com.example.ai.orchestrator.CentralOrchestrator by lazy {
-        com.example.ai.orchestrator.CentralOrchestrator(chatAgent, studyAgent, codingAgent, aiStateManager, toolExecutionManager)
+        com.example.ai.orchestrator.CentralOrchestrator(chatAgent, studyAgent, codingAgent, aiStateManager, toolExecutionManager, shivAIClient)
     }
 }

@@ -28,13 +28,29 @@ class MemoryViewModel(private val repository: SemanticMemoryRepository) : ViewMo
     private val _memories = MutableStateFlow<List<SemanticMemory>>(emptyList())
     val memories = _memories.asStateFlow()
 
+    private val _isSyncing = MutableStateFlow(false)
+    val isSyncing = _isSyncing.asStateFlow()
+
     init {
         loadMemories()
     }
 
-    private fun loadMemories() {
+    fun loadMemories() {
         viewModelScope.launch {
             _memories.value = repository.getAllActiveMemories()
+        }
+    }
+
+    fun rememberPreference(key: String, value: String, category: String = "preference") {
+        if (key.isBlank() || value.isBlank()) return
+        viewModelScope.launch {
+            _isSyncing.value = true
+            try {
+                repository.rememberCloud(key = key.trim(), value = value.trim(), category = category.trim())
+            } finally {
+                _isSyncing.value = false
+                loadMemories()
+            }
         }
     }
 
@@ -50,40 +66,63 @@ class MemoryViewModel(private val repository: SemanticMemoryRepository) : ViewMo
 @Composable
 fun MemoryScreen(viewModel: MemoryViewModel, onBack: () -> Unit) {
     val memories by viewModel.memories.collectAsState()
+    val isSyncing by viewModel.isSyncing.collectAsState()
+    var showAddDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Memory Inspection (Deep Context)") },
+                title = { Text("Long-Term Memory (ShivAI)") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
+        },
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = { showAddDialog = true },
+                icon = { Icon(Icons.Default.Info, contentDescription = "Teach ShivAI") },
+                text = { Text("Teach Preference") }
+            )
         }
     ) { innerPadding ->
+        if (showAddDialog) {
+            AddPreferenceDialog(
+                onDismiss = { showAddDialog = false },
+                onSave = { key, value, category ->
+                    viewModel.rememberPreference(key, value, category)
+                    showAddDialog = false
+                }
+            )
+        }
+
         LazyColumn(
             contentPadding = PaddingValues(16.dp),
             modifier = Modifier.padding(innerPadding).fillMaxSize()
         ) {
             item {
                 Text(
-                    text = "Semantic Memory Trust Center",
+                    text = "Persistent Knowledge & Preferences",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = "Inspect and manage what the AI remembers about you. All data is stored locally and securely encrypted.",
+                    text = "Preferences and facts stored here sync with ShivAI's cloud memory engine. ShivAI automatically recalls this context when answering your queries.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                if (isSyncing) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                }
                 Spacer(modifier = Modifier.height(16.dp))
             }
             if (memories.isEmpty()) {
                 item {
-                    Text("No deep memories extracted yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("No memories or preferences stored yet. Tap 'Teach Preference' to add one!", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
                 items(memories, key = { it.id }) { memory ->
@@ -93,6 +132,63 @@ fun MemoryScreen(viewModel: MemoryViewModel, onBack: () -> Unit) {
             }
         }
     }
+}
+
+@Composable
+fun AddPreferenceDialog(
+    onDismiss: () -> Unit,
+    onSave: (key: String, value: String, category: String) -> Unit
+) {
+    var key by remember { mutableStateOf("") }
+    var value by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf("preference") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Teach ShivAI a Preference") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    "Store facts or instructions that ShivAI will remember forever (e.g. coding style, preferred framework).",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                OutlinedTextField(
+                    value = key,
+                    onValueChange = { key = it },
+                    label = { Text("Key (e.g. coding_style)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = value,
+                    onValueChange = { value = it },
+                    label = { Text("Value (e.g. Prefers Python with FastAPI)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3
+                )
+                OutlinedTextField(
+                    value = category,
+                    onValueChange = { category = it },
+                    label = { Text("Category") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onSave(key, value, category) },
+                enabled = key.isNotBlank() && value.isNotBlank()
+            ) {
+                Text("Remember")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @Composable

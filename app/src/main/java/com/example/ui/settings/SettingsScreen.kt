@@ -25,6 +25,8 @@ import kotlinx.coroutines.flow.StateFlow
 @Composable
 fun SettingsScreen(
     permissionOrchestrator: PermissionOrchestrator,
+    shivAIPreferences: com.example.ai.shivai.config.ShivAIPreferences? = null,
+    shivAIClient: com.example.ai.shivai.client.ShivAIClient? = null,
     onNavigateBack: () -> Unit,
     onNavigateDiagnostics: () -> Unit,
     onRequestUsageStats: () -> Unit,
@@ -43,7 +45,7 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("AI Permission Control Center", fontWeight = FontWeight.Bold) }
+                title = { Text("AI & Cloud Control Center", fontWeight = FontWeight.Bold) }
             )
         },
         containerColor = MaterialTheme.colorScheme.background
@@ -57,6 +59,10 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             ReadinessCard(readinessState)
+
+            if (shivAIPreferences != null && shivAIClient != null) {
+                ShivAICloudConfigCard(preferences = shivAIPreferences, client = shivAIClient)
+            }
 
             Text("Transparency & Control", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
             Text("These permissions power the AI engine. You have full control. Disabling permissions will fall back to Safe-Mode operation.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -183,3 +189,126 @@ fun PermissionItem(
         }
     }
 }
+
+@Composable
+fun ShivAICloudConfigCard(
+    preferences: com.example.ai.shivai.config.ShivAIPreferences,
+    client: com.example.ai.shivai.client.ShivAIClient
+) {
+    val coroutineScope = rememberCoroutineScope()
+    var baseUrl by remember { mutableStateOf(preferences.getBaseUrl()) }
+    var userId by remember { mutableStateOf(preferences.getUserId()) }
+    var apiKey by remember { mutableStateOf(preferences.getApiKey()) }
+
+    var testStatus by remember { mutableStateOf<String?>(null) }
+    var isTesting by remember { mutableStateOf(false) }
+    var isSaved by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                "ShivAI Cloud Engine",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                "Connect your mobile launcher directly to your 24/7 cloud AI backend instance on Render or custom server.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            OutlinedTextField(
+                value = baseUrl,
+                onValueChange = { baseUrl = it; isSaved = false },
+                label = { Text("Cloud Base URL") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            OutlinedTextField(
+                value = userId,
+                onValueChange = { userId = it; isSaved = false },
+                label = { Text("User ID (e.g. shivam)") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            OutlinedTextField(
+                value = apiKey,
+                onValueChange = { apiKey = it; isSaved = false },
+                label = { Text("Render API Key (Optional / Header Token)") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = {
+                        preferences.setBaseUrl(baseUrl)
+                        preferences.setUserId(userId)
+                        preferences.setApiKey(apiKey)
+                        isSaved = true
+                    },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(if (isSaved) "Saved!" else "Save Config")
+                }
+
+                FilledTonalButton(
+                    onClick = {
+                        isTesting = true
+                        testStatus = null
+                        coroutineScope.launch {
+                            preferences.setBaseUrl(baseUrl)
+                            preferences.setUserId(userId)
+                            preferences.setApiKey(apiKey)
+                            when (val result = client.checkHealth()) {
+                                is com.example.core.utils.Result.Success -> {
+                                    val (health, latency) = result.data
+                                    testStatus = "ONLINE: ${health.service ?: "ShivAI"} ${health.version ?: ""} (${latency}ms)"
+                                }
+                                is com.example.core.utils.Result.Error -> {
+                                    testStatus = "ERROR: ${result.message}"
+                                }
+                                else -> {}
+                            }
+                            isTesting = false
+                        }
+                    },
+                    enabled = !isTesting,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(if (isTesting) "Pinging..." else "Test Cloud")
+                }
+            }
+
+            testStatus?.let { status ->
+                Surface(
+                    color = if (status.startsWith("ONLINE")) Color(0xFF2E7D32).copy(alpha = 0.15f) else MaterialTheme.colorScheme.errorContainer,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = status,
+                        modifier = Modifier.padding(8.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (status.startsWith("ONLINE")) Color(0xFF2E7D32) else MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+            }
+        }
+    }
+}
+

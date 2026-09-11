@@ -17,7 +17,8 @@ class ChatAgent(
     private val geminiClient: GeminiClient,
     private val contextManager: ContextManager,
     private val chatRepository: ChatRepository,
-    private val toolRegistry: com.example.ai.tool.ToolRegistry
+    private val toolRegistry: com.example.ai.tool.ToolRegistry,
+    private val shivAIClient: com.example.ai.shivai.client.ShivAIClient? = null
 ) : BaseAgent {
     override val type = AgentType.CHAT
     override val name = "ShivAI Chat Agent"
@@ -31,13 +32,14 @@ class ChatAgent(
     }
 
     override fun executeStream(prompt: String, sessionId: String): Flow<Result<String>> {
-        // Unfortunately flow builder does not easily support suspend call before emission in this signature,
-        // so we would typically map or build it inside the flow.
-        // For simplicity:
-        throw NotImplementedError("To be implemented with Flow collector")
+        return shivAIClient?.streamChat(prompt, sessionId, agent = "chat")
+            ?: kotlinx.coroutines.flow.flow { emit(Result.Error(IllegalStateException("No client configured"))) }
     }
     
     suspend fun executeStreamReal(prompt: String, sessionId: String): Flow<Result<String>> {
+        if (shivAIClient != null) {
+            return shivAIClient.streamChat(prompt, sessionId, agent = "chat")
+        }
         val request = buildRequest(prompt, sessionId)
         return geminiClient.generateContentStream(modelId, request)
     }

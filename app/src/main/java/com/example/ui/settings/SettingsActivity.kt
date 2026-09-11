@@ -31,6 +31,8 @@ class SettingsActivity : ComponentActivity() {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     SettingsScreen(
                         permissionOrchestrator = permissionOrchestrator,
+                        shivAIPreferences = appContainer.shivAIPreferences,
+                        shivAIClient = appContainer.shivAIClient,
                         onNavigateBack = { finish() },
                         onNavigateDiagnostics = {
                             startActivity(Intent(this@SettingsActivity, com.example.ui.diagnostics.DiagnosticsActivity::class.java))

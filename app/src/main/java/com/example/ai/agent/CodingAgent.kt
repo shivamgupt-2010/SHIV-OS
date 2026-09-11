@@ -15,7 +15,8 @@ import kotlinx.coroutines.flow.first
 class CodingAgent(
     private val geminiClient: GeminiClient,
     private val contextManager: ContextManager,
-    private val chatRepository: ChatRepository
+    private val chatRepository: ChatRepository,
+    private val shivAIClient: com.example.ai.shivai.client.ShivAIClient? = null
 ) : BaseAgent {
     override val type = AgentType.CODING
     override val name = "ShivAI Coding Agent"
@@ -29,6 +30,9 @@ class CodingAgent(
     }
 
     override fun executeStream(prompt: String, sessionId: String): Flow<Result<String>> {
+        if (shivAIClient != null) {
+            return shivAIClient.streamChat(prompt, sessionId, agent = "coding")
+        }
         val request = buildRequestStream(prompt, sessionId)
         return geminiClient.generateContentStream(modelId, request)
     }

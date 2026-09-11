@@ -27,7 +27,8 @@ enum class RuntimeOptimizationMode {
 
 class AIRuntimeManager(
     private val context: Context,
-    private val geminiClient: GeminiClient
+    private val geminiClient: GeminiClient,
+    private val shivAIClient: com.example.ai.shivai.client.ShivAIClient? = null
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var streamingJob: Job? = null
@@ -143,15 +144,32 @@ class AIRuntimeManager(
         streamingJob = scope.launch {
             _activeAgentsCount.value += 1
             try {
-                geminiClient.generateContentStream("gemini-2.5-flash", request).collect { result ->
-                    when (result) {
-                        is Result.Success -> {
-                            _streamingResponse.value += result.data
+                if (shivAIClient != null) {
+                    shivAIClient.streamChat(
+                        message = prompt,
+                        customInstructions = "Context: $contextData\nKeep answers extremely concise to remain battery efficient."
+                    ).collect { result ->
+                        when (result) {
+                            is Result.Success -> {
+                                _streamingResponse.value += result.data
+                            }
+                            is Result.Error -> {
+                                _streamingResponse.value += "\n[Error: ${result.exception.message}]"
+                            }
+                            is Result.Loading -> { }
                         }
-                        is Result.Error -> {
-                            _streamingResponse.value += "\n[Error: ${result.exception.message}]"
+                    }
+                } else {
+                    geminiClient.generateContentStream("gemini-2.5-flash", request).collect { result ->
+                        when (result) {
+                            is Result.Success -> {
+                                _streamingResponse.value += result.data
+                            }
+                            is Result.Error -> {
+                                _streamingResponse.value += "\n[Error: ${result.exception.message}]"
+                            }
+                            is Result.Loading -> { }
                         }
-                        is Result.Loading -> { }
                     }
                 }
             } finally {

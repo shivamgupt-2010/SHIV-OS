@@ -12,12 +12,44 @@ import com.example.ai.memory.domain.model.MemoryType
 class SemanticMemoryRepository(
     private val memoryDao: SemanticMemoryDao,
     private val securityProvider: MemorySecurityProvider,
-    private val json: Json = Json { ignoreUnknownKeys = true }
+    private val json: Json = Json { ignoreUnknownKeys = true },
+    private val shivAIClient: com.example.ai.shivai.client.ShivAIClient? = null
 ) {
 
     suspend fun saveMemory(memory: SemanticMemory) {
         val entity = memory.toEntity()
         memoryDao.insertMemory(entity)
+        try {
+            shivAIClient?.remember(
+                key = memory.metadata["key"] ?: memory.id.take(20),
+                value = memory.content,
+                category = memory.type.name.lowercase(),
+                importance = memory.importanceScore.toDouble()
+            )
+        } catch (e: Exception) {
+            // Offline fallback: saved locally
+        }
+    }
+
+    suspend fun rememberCloud(
+        key: String,
+        value: String,
+        category: String = "general",
+        importance: Double = 0.5
+    ): com.example.core.utils.Result<com.example.ai.shivai.model.ShivAIMemoryResponse>? {
+        val res = shivAIClient?.remember(key, value, category, importance)
+        if (res is com.example.core.utils.Result.Success) {
+            val localMemory = SemanticMemory(
+                id = res.data.id,
+                type = MemoryType.FACT,
+                content = "$key: $value",
+                metadata = mapOf("key" to key, "category" to category, "cloud_id" to res.data.id),
+                importanceScore = importance.toFloat()
+            )
+            val entity = localMemory.toEntity()
+            memoryDao.insertMemory(entity)
+        }
+        return res
     }
 
     suspend fun getMemoryById(id: String): SemanticMemory? {
@@ -34,6 +66,11 @@ class SemanticMemoryRepository(
     
     suspend fun deleteMemory(id: String) {
         memoryDao.deleteMemory(id)
+        try {
+            shivAIClient?.forget(id)
+        } catch (e: Exception) {
+            // Ignore offline error
+        }
     }
 
     private fun SemanticMemory.toEntity(): SemanticMemoryEntity {

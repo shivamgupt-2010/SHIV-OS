@@ -21,7 +21,8 @@ class CentralOrchestrator(
     private val studyAgent: com.example.ai.agent.StudyAgent,
     private val codingAgent: com.example.ai.agent.CodingAgent,
     private val stateManager: com.example.ai.state.AIStateManager,
-    private val toolExecutionManager: ToolExecutionManager
+    private val toolExecutionManager: ToolExecutionManager,
+    private val shivAIClient: com.example.ai.shivai.client.ShivAIClient? = null
 ) {
     /**
      * Determines which agent is best suited for the task.
@@ -106,10 +107,22 @@ class CentralOrchestrator(
     suspend fun processTaskStream(prompt: String, sessionId: String): Flow<Result<String>> {
          val agent = routeIntent(prompt)
          Logger.d("Orchestrator stream routed task to: ${agent.name}")
+         if (shivAIClient != null) {
+             val agentTag = when (agent) {
+                 codingAgent -> "coding"
+                 studyAgent -> "study"
+                 else -> "chat"
+             }
+             return shivAIClient.streamChat(
+                 message = prompt,
+                 conversationId = sessionId,
+                 agent = agentTag
+             )
+         }
          return if (agent is ChatAgent) {
              agent.executeStreamReal(prompt, sessionId)
          } else {
-             flow { emit(Result.Error(IllegalStateException("Stream not supported by this agent yet."))) }
+             agent.executeStream(prompt, sessionId)
          }
     }
 }
