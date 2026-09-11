@@ -34,12 +34,30 @@ import com.example.ui.components.CosmicBackground
 import com.example.ui.components.TrishulIcon
 import com.example.ui.theme.*
 
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.example.ui.components.LordShivaCenterpiece
+import com.example.ui.components.TrishulCapsule
+
 data class ActionCardItem(
     val id: String,
     val title: String,
     val icon: ImageVector,
     val iconColor: Color
 )
+
+fun isDefaultLauncher(context: Context): Boolean {
+    return try {
+        val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+        val resolveInfo = context.packageManager.resolveActivity(intent, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY)
+        resolveInfo?.activityInfo?.packageName == context.packageName
+    } catch (e: Exception) {
+        false
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,6 +68,21 @@ fun LauncherScreen(
 ) {
     val context = LocalContext.current
     var isDefaultHomePromptDismissed by remember { mutableStateOf(false) }
+    var isDefaultHome by remember { mutableStateOf(isDefaultLauncher(context)) }
+    var isFocusModeActive by remember { mutableStateOf(false) }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                isDefaultHome = isDefaultLauncher(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     val actionCards = listOf(
         ActionCardItem("chat", "Chat", Icons.Default.ChatBubble, ShivaCyan),
@@ -60,9 +93,21 @@ fun LauncherScreen(
         ActionCardItem("more", "More", Icons.Default.Apps, ShivaPink)
     )
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        // Cosmic Lord Shiva silhouette background
-        CosmicBackground(showSilhouette = true)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                detectVerticalDragGestures { _, dragAmount ->
+                    if (dragAmount < -70) {
+                        onNavigate("all_apps")
+                    } else if (dragAmount > 70) {
+                        onNavigate("chat")
+                    }
+                }
+            }
+    ) {
+        // Cosmic background
+        CosmicBackground(showSilhouette = false)
 
         Scaffold(
             containerColor = Color.Transparent,
@@ -146,7 +191,22 @@ fun LauncherScreen(
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(28.dp))
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Trishul Dynamic Capsule
+                TrishulCapsule(
+                    isFocusModeActive = isFocusModeActive,
+                    onToggleFocusMode = { isFocusModeActive = !isFocusModeActive },
+                    onOpenVoiceDictate = { onNavigate("notes") },
+                    onOpenVisionLens = { onNavigate("tools") }
+                )
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                // Majestic Meditating Lord Shiva Centerpiece
+                LordShivaCenterpiece(size = 140.dp)
+
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // Brand Header: "ShivAI - Your AI. Your Way."
                 Text(
@@ -164,7 +224,7 @@ fun LauncherScreen(
                     color = TextSecondary
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
                 // Search Pill: "Ask ShivAI anything..."
                 Surface(
@@ -202,10 +262,10 @@ fun LauncherScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(28.dp))
+                Spacer(modifier = Modifier.height(22.dp))
 
-                // Default Home Launcher Request Banner
-                if (!isDefaultHomePromptDismissed) {
+                // Default Home Launcher Request Banner - Automatically hides if already default
+                if (!isDefaultHome && !isDefaultHomePromptDismissed) {
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()

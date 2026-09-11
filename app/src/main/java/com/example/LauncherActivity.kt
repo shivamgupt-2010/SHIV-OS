@@ -25,9 +25,27 @@ import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.tools.ToolsScreen
 
 class LauncherActivity : ComponentActivity() {
+    private val currentRouteFlow = kotlinx.coroutines.flow.MutableStateFlow("launcher")
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        try {
+            val serviceIntent = Intent(this, com.example.core.permissions.ShivAIPersistentService::class.java)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent)
+            } else {
+                startService(serviceIntent)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        intent?.getStringExtra("EXTRA_TARGET_SCREEN")?.let {
+            currentRouteFlow.value = it
+        }
+
         setContent {
             MyApplicationTheme {
                 val appContainer = (application as ShivAiApplication).container
@@ -73,13 +91,13 @@ class LauncherActivity : ComponentActivity() {
                         hasSeenOnboardingState.value = true
                     })
                 } else {
-                    var currentRoute by remember { mutableStateOf("launcher") }
+                    val currentRoute by currentRouteFlow.collectAsState()
 
                     BackHandler(enabled = drawerState.isOpen || currentRoute != "launcher") {
                         if (drawerState.isOpen) {
                             coroutineScope.launch { drawerState.close() }
                         } else {
-                            currentRoute = "launcher"
+                            currentRouteFlow.value = "launcher"
                         }
                     }
 
@@ -92,7 +110,7 @@ class LauncherActivity : ComponentActivity() {
                                     if (route == "settings") {
                                         startActivity(Intent(this@LauncherActivity, com.example.ui.settings.SettingsActivity::class.java))
                                     } else {
-                                        currentRoute = route
+                                        currentRouteFlow.value = route
                                     }
                                 },
                                 onClose = { coroutineScope.launch { drawerState.close() } }
@@ -111,22 +129,22 @@ class LauncherActivity : ComponentActivity() {
                                             if (nextRoute == "settings") {
                                                 startActivity(Intent(this@LauncherActivity, com.example.ui.settings.SettingsActivity::class.java))
                                             } else {
-                                                currentRoute = nextRoute
+                                                currentRouteFlow.value = nextRoute
                                             }
                                         },
                                         onOpenSidebar = { coroutineScope.launch { drawerState.open() } }
                                     )
                                     "chat" -> ChatScreen(
                                         viewModel = chatViewModel,
-                                        onBack = { currentRoute = "launcher" }
+                                        onBack = { currentRouteFlow.value = "launcher" }
                                     )
                                     "agents" -> AgentsScreen(
-                                        onSelectAgent = { _ -> currentRoute = "chat" },
+                                        onSelectAgent = { _ -> currentRouteFlow.value = "chat" },
                                         onNavigate = { nextRoute ->
                                             if (nextRoute == "settings") {
                                                 startActivity(Intent(this@LauncherActivity, com.example.ui.settings.SettingsActivity::class.java))
                                             } else {
-                                                currentRoute = nextRoute
+                                                currentRouteFlow.value = nextRoute
                                             }
                                         },
                                         onOpenSidebar = { coroutineScope.launch { drawerState.open() } }
@@ -136,7 +154,7 @@ class LauncherActivity : ComponentActivity() {
                                             if (nextRoute == "settings") {
                                                 startActivity(Intent(this@LauncherActivity, com.example.ui.settings.SettingsActivity::class.java))
                                             } else {
-                                                currentRoute = nextRoute
+                                                currentRouteFlow.value = nextRoute
                                             }
                                         },
                                         onOpenSidebar = { coroutineScope.launch { drawerState.open() } }
@@ -146,18 +164,18 @@ class LauncherActivity : ComponentActivity() {
                                             if (nextRoute == "settings") {
                                                 startActivity(Intent(this@LauncherActivity, com.example.ui.settings.SettingsActivity::class.java))
                                             } else {
-                                                currentRoute = nextRoute
+                                                currentRouteFlow.value = nextRoute
                                             }
                                         },
                                         onOpenSidebar = { coroutineScope.launch { drawerState.open() } }
                                     )
                                     "all_apps" -> AppDrawerScreen(
                                         viewModel = launcherViewModel,
-                                        onBack = { currentRoute = "launcher" }
+                                        onBack = { currentRouteFlow.value = "launcher" }
                                     )
                                     else -> LauncherScreen(
                                         viewModel = launcherViewModel,
-                                        onNavigate = { currentRoute = it },
+                                        onNavigate = { currentRouteFlow.value = it },
                                         onOpenSidebar = { coroutineScope.launch { drawerState.open() } }
                                     )
                                 }
@@ -166,6 +184,14 @@ class LauncherActivity : ComponentActivity() {
                     }
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        intent.getStringExtra("EXTRA_TARGET_SCREEN")?.let {
+            currentRouteFlow.value = it
         }
     }
 }

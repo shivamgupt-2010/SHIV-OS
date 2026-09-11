@@ -29,22 +29,55 @@ fun CosmicBackground(
     modifier: Modifier = Modifier,
     showSilhouette: Boolean = true
 ) {
+    val currentHour = androidx.compose.runtime.remember {
+        java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+    }
+
+    val cosmicColors = androidx.compose.runtime.remember(currentHour) {
+        when (currentHour) {
+            in 3..5 -> listOf( // Brahma Muhurta: Mystical violet, deep saffron auroras
+                Color(0xFF080614),
+                Color(0xFF140D2B),
+                Color(0xFF261447),
+                Color(0xFF431C53),
+                Color(0xFF63254A),
+                Color(0xFF260F25),
+                CosmicBackground
+            )
+            in 6..16 -> listOf( // Day: Celestial Deep Azure & Sapphire
+                Color(0xFF060D1A),
+                Color(0xFF0A1830),
+                Color(0xFF0F2447),
+                Color(0xFF162D50),
+                Color(0xFF182236),
+                Color(0xFF0D1726),
+                CosmicBackground
+            )
+            in 17..19 -> listOf( // Sandhya: Twilight crimson & imperial cosmic purple
+                Color(0xFF0E071A),
+                Color(0xFF1F0D33),
+                Color(0xFF381345),
+                Color(0xFF581C45),
+                Color(0xFF6B2135),
+                Color(0xFF2E1122),
+                CosmicBackground
+            )
+            else -> listOf( // Ratri: Obsidian void & cosmic starlight
+                Color(0xFF06080E),
+                Color(0xFF0B101D),
+                Color(0xFF131A2D),
+                Color(0xFF1F1B38),
+                Color(0xFF2C1635),
+                Color(0xFF1A1224),
+                CosmicBackground
+            )
+        }
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF06080E),
-                        Color(0xFF0B101D),
-                        Color(0xFF131A2D),
-                        Color(0xFF1F1B38),
-                        Color(0xFF2C1635),
-                        Color(0xFF1A1224),
-                        CosmicBackground
-                    )
-                )
-            )
+            .background(Brush.verticalGradient(colors = cosmicColors))
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val width = size.width

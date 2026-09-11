@@ -133,11 +133,34 @@ fun AppDrawerScreen(
     }
 }
 
+fun loadAppIconBitmap(context: android.content.Context, packageName: String): androidx.compose.ui.graphics.ImageBitmap? {
+    return try {
+        val drawable = context.packageManager.getApplicationIcon(packageName)
+        if (drawable is android.graphics.drawable.BitmapDrawable && drawable.bitmap != null) {
+            return drawable.bitmap.asImageBitmap()
+        }
+        val width = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 128
+        val height = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 128
+        val bmp = android.graphics.Bitmap.createBitmap(width, height, android.graphics.Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(bmp)
+        drawable.setBounds(0, 0, canvas.width, canvas.height)
+        drawable.draw(canvas)
+        bmp.asImageBitmap()
+    } catch (e: Exception) {
+        null
+    }
+}
+
 @Composable
 fun AppGridItem(
     app: AppInfo,
     onClick: () -> Unit
 ) {
+    val context = LocalContext.current
+    val appIcon = remember(app.packageName) {
+        loadAppIconBitmap(context, app.packageName)
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -146,37 +169,47 @@ fun AppGridItem(
             .padding(vertical = 8.dp, horizontal = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // App icon box with gradient & initial
         Box(
             modifier = Modifier
-                .size(54.dp)
+                .size(56.dp)
                 .clip(RoundedCornerShape(16.dp))
-                .background(CosmicSurfaceVariant)
-                .padding(1.dp),
+                .background(CosmicSurfaceVariant.copy(alpha = 0.5f))
+                .padding(2.dp),
             contentAlignment = Alignment.Center
         ) {
-            val initial = app.name.firstOrNull()?.uppercase() ?: "A"
-            val colorHash = app.packageName.hashCode()
-            val accentColor = when (kotlin.math.abs(colorHash) % 5) {
-                0 -> ShivaCyan
-                1 -> ShivaIndigo
-                2 -> ShivaPurple
-                3 -> ShivaPink
-                else -> ShivaOrange
-            }
+            if (appIcon != null) {
+                androidx.compose.foundation.Image(
+                    bitmap = appIcon,
+                    contentDescription = app.name,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(12.dp)),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                )
+            } else {
+                val initial = app.name.firstOrNull()?.uppercase() ?: "A"
+                val colorHash = app.packageName.hashCode()
+                val accentColor = when (kotlin.math.abs(colorHash) % 5) {
+                    0 -> ShivaCyan
+                    1 -> ShivaIndigo
+                    2 -> ShivaPurple
+                    3 -> ShivaPink
+                    else -> ShivaOrange
+                }
 
-            Surface(
-                modifier = Modifier.fillMaxSize(),
-                shape = RoundedCornerShape(15.dp),
-                color = accentColor.copy(alpha = 0.15f),
-                border = androidx.compose.foundation.BorderStroke(1.dp, accentColor.copy(alpha = 0.35f))
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        text = initial,
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                        color = accentColor
-                    )
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    shape = RoundedCornerShape(14.dp),
+                    color = accentColor.copy(alpha = 0.18f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, accentColor.copy(alpha = 0.35f))
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = initial,
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                            color = accentColor
+                        )
+                    }
                 }
             }
         }
