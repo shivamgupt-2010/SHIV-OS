@@ -2,6 +2,7 @@ package com.example.ai.shivai.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 @Serializable
 data class ShivAIChatRequest(
@@ -16,30 +17,26 @@ data class ShivAIChatRequest(
 )
 
 @Serializable
-data class ShivAIUsage(
-    @SerialName("prompt_tokens") val promptTokens: Int? = 0,
-    @SerialName("completion_tokens") val completionTokens: Int? = 0,
-    @SerialName("total_tokens") val totalTokens: Int? = 0
-)
-
-@Serializable
 data class ShivAIUnifiedResponse(
     @SerialName("id") val id: String? = null,
-    @SerialName("content") val content: String,
-    @SerialName("model") val model: String? = null,
+    @SerialName("request_id") val requestId: String? = null,
+    @SerialName("content") val content: String = "",
+    @SerialName("model") val model: JsonElement? = null,
     @SerialName("provider") val provider: String? = null,
     @SerialName("finish_reason") val finishReason: String? = null,
     @SerialName("latency_ms") val latencyMs: Double? = null,
     @SerialName("conversation_id") val conversationId: String? = null,
-    @SerialName("usage") val usage: ShivAIUsage? = null
+    @SerialName("usage") val usage: JsonElement? = null
 )
 
 @Serializable
 data class ShivAIStreamChunk(
     @SerialName("delta") val delta: String = "",
-    @SerialName("model") val model: String? = null,
+    @SerialName("content") val content: String = "",
+    @SerialName("model") val model: JsonElement? = null,
     @SerialName("provider") val provider: String? = null,
-    @SerialName("finish_reason") val finishReason: String? = null
+    @SerialName("finish_reason") val finishReason: String? = null,
+    @SerialName("error") val error: JsonElement? = null
 )
 
 @Serializable

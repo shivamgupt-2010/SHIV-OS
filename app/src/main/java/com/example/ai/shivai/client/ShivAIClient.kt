@@ -107,7 +107,7 @@ class ShivAIClient(
         }
     }
 
-    // Method 3: Real-Time Word-by-Word Streaming (SSE)
+    // Method 3: Real-Time Word-by-Word Streaming (SSE) with Non-Streaming Fallback
     fun streamChat(
         message: String,
         conversationId: String? = null,
@@ -117,6 +117,7 @@ class ShivAIClient(
         temperature: Double = 0.7,
         maxTokens: Int = 4096
     ): Flow<Result<String>> = flow {
+        var emittedAny = false
         try {
             val req = ShivAIChatRequest(
                 message = message,
@@ -141,18 +142,58 @@ class ShivAIClient(
                         break
                     }
                     try {
-                        val chunk = json.decodeFromString<ShivAIStreamChunk>(dataStr)
-                        if (chunk.delta.isNotEmpty()) {
-                            emit(Result.Success(chunk.delta))
+                        val element = json.parseToJsonElement(dataStr)
+                        if (element is kotlinx.serialization.json.JsonObject) {
+                            val delta = element["delta"]?.let {
+                                if (it is kotlinx.serialization.json.JsonPrimitive) it.content else it.toString()
+                            } ?: element["content"]?.let {
+                                if (it is kotlinx.serialization.json.JsonPrimitive) it.content else it.toString()
+                            } ?: ""
+
+                            if (delta.isNotEmpty()) {
+                                emittedAny = true
+                                emit(Result.Success(delta))
+                            }
                         }
                     } catch (e: Exception) {
-                        Logger.d("Skipping unparseable SSE chunk: $dataStr")
+                        Logger.d("Skipping unparseable SSE chunk: $dataStr, $e")
                     }
                 }
             }
         } catch (e: Exception) {
-            Logger.e("ShivAI Chat Stream Failed", e)
-            emit(Result.Error(e, e.message ?: "Streaming failed"))
+            Logger.e("ShivAI Chat Stream Failed, trying fallback: ${e.message}", e)
+        }
+
+        // Robust Fallback: If streaming yielded nothing or failed, call non-streaming chat()!
+        if (!emittedAny) {
+            try {
+                Logger.d("SSE stream yielded no tokens, falling back to non-streaming chat...")
+                val fallbackRes = chat(
+                    message = message,
+                    conversationId = conversationId,
+                    agent = agent,
+                    customInstructions = customInstructions,
+                    preferredProvider = preferredProvider,
+                    temperature = temperature,
+                    maxTokens = maxTokens
+                )
+                when (fallbackRes) {
+                    is Result.Success -> {
+                        if (fallbackRes.data.content.isNotEmpty()) {
+                            emit(Result.Success(fallbackRes.data.content))
+                        } else {
+                            emit(Result.Error(Exception("Empty AI response"), "AI returned empty response"))
+                        }
+                    }
+                    is Result.Error -> {
+                        emit(Result.Error(fallbackRes.exception, fallbackRes.message))
+                    }
+                    else -> {}
+                }
+            } catch (fallbackEx: Exception) {
+                Logger.e("Fallback chat also failed", fallbackEx)
+                emit(Result.Error(fallbackEx, fallbackEx.message ?: "Chat failed"))
+            }
         }
     }.flowOn(Dispatchers.IO)
 

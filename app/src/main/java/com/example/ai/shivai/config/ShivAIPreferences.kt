@@ -20,7 +20,10 @@ class ShivAIPreferences(context: Context) {
     val apiKey: StateFlow<String> = _apiKey.asStateFlow()
 
     fun getBaseUrl(): String {
-        val url = prefs.getString(KEY_BASE_URL, DEFAULT_BASE_URL) ?: DEFAULT_BASE_URL
+        val url = prefs.getString(KEY_BASE_URL, null)
+        if (url.isNullOrBlank() || url.contains("localhost") || url.contains("10.0.2.2") || !url.startsWith("https://")) {
+            return DEFAULT_BASE_URL
+        }
         return url.trimEnd('/')
     }
 
@@ -41,7 +44,11 @@ class ShivAIPreferences(context: Context) {
     }
 
     fun getApiKey(): String {
-        return prefs.getString(KEY_API_KEY, DEFAULT_API_KEY) ?: DEFAULT_API_KEY
+        val key = prefs.getString(KEY_API_KEY, null)
+        if (key.isNullOrBlank() || key == "test-key" || !key.startsWith("shivai-production")) {
+            return DEFAULT_API_KEY
+        }
+        return key
     }
 
     fun setApiKey(key: String) {
