@@ -103,7 +103,13 @@ class ShivAIClient(
             Result.Success(response)
         } catch (e: Exception) {
             Logger.e("ShivAI Chat Request Failed", e)
-            Result.Error(e, e.message ?: "Chat failed")
+            val msg = if (e is retrofit2.HttpException) {
+                val errBody = try { e.response()?.errorBody()?.string() } catch (ignored: Exception) { null }
+                if (!errBody.isNullOrBlank()) "HTTP ${e.code()}: $errBody" else "HTTP ${e.code()}"
+            } else {
+                e.message ?: "Chat failed"
+            }
+            Result.Error(e, msg)
         }
     }
 

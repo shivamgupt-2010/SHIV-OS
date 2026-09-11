@@ -111,7 +111,7 @@ class CentralOrchestrator(
              val agentTag = when (agent) {
                  codingAgent -> "coding"
                  studyAgent -> "study"
-                 else -> "chat"
+                 else -> "general"
              }
              return shivAIClient.streamChat(
                  message = prompt,
