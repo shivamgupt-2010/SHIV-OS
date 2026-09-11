@@ -21,7 +21,8 @@ data class ChatMessage(
 class ChatViewModel(
     private val orchestrator: CentralOrchestrator,
     private val voiceSessionManager: VoiceSessionManager,
-    private val chatHistoryDao: ChatHistoryDao
+    private val chatHistoryDao: ChatHistoryDao,
+    private val launcherShellManager: com.example.core.launcher.LauncherShellManager? = null
 ) : ViewModel() {
     private val sessionId = "main_chat_session"
 
@@ -51,6 +52,23 @@ class ChatViewModel(
         viewModelScope.launch {
             chatHistoryDao.insertMessage(userMsg)
             
+            // Check if user is asking to open an app (e.g. "open YouTube", "launch Camera")
+            val clean = text.trim().lowercase()
+            if ((clean.startsWith("open ") || clean.startsWith("launch ")) && launcherShellManager != null) {
+                val targetApp = clean.removePrefix("open ").removePrefix("launch ").trim()
+                val installed = launcherShellManager.installedApps.value
+                val matched = installed.firstOrNull { it.name.contains(targetApp, ignoreCase = true) }
+                    ?: installed.firstOrNull { it.packageName.contains(targetApp, ignoreCase = true) }
+                
+                if (matched != null) {
+                    val respText = "Opening ${matched.name} for you right now..."
+                    val agentMsg = ChatHistoryEntity(sessionId = sessionId, role = "agent", content = respText)
+                    chatHistoryDao.insertMessage(agentMsg)
+                    launcherShellManager.launchApp(matched.packageName)
+                    return@launch
+                }
+            }
+            
             // Add a temporary streaming agent message
             val tempId = UUID.randomUUID().toString()
             _messages.update { current ->
@@ -58,7 +76,6 @@ class ChatViewModel(
             }
 
             try {
-                // Assuming processTaskStream is implemented in CentralOrchestrator
                 var currentText = ""
                 orchestrator.processTaskStream(text, sessionId).collect { result ->
                     when (result) {

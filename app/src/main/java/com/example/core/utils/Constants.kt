@@ -9,5 +9,6 @@ object Constants {
         const val HEADER_AUTHORIZATION = "Authorization"
         const val HEADER_API_KEY = "X-API-Key"
         const val BEARER = "Bearer "
+        const val DEFAULT_API_KEY = "shivai-production-key-2026"
     }
 }

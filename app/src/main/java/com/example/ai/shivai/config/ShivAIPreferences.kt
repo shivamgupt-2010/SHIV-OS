@@ -41,7 +41,7 @@ class ShivAIPreferences(context: Context) {
     }
 
     fun getApiKey(): String {
-        return prefs.getString(KEY_API_KEY, "") ?: ""
+        return prefs.getString(KEY_API_KEY, DEFAULT_API_KEY) ?: DEFAULT_API_KEY
     }
 
     fun setApiKey(key: String) {
@@ -58,5 +58,6 @@ class ShivAIPreferences(context: Context) {
 
         const val DEFAULT_BASE_URL = "https://shivai-backend.onrender.com/api/v1"
         const val DEFAULT_USER_ID = "shivam"
+        const val DEFAULT_API_KEY = "shivai-production-key-2026"
     }
 }
