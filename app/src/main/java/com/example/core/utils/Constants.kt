@@ -2,13 +2,13 @@ package com.example.core.utils
 
 object Constants {
     const val DATABASE_NAME = "shivai_database"
-    const val BASE_URL = "https://shivai-backend.onrender.com/api/v1/"
+    const val BASE_URL = "https://real-shivai.onrender.com/"
     const val PREFERENCES_NAME = "shivai_preferences"
     
     object Auth {
         const val HEADER_AUTHORIZATION = "Authorization"
         const val HEADER_API_KEY = "X-API-Key"
         const val BEARER = "Bearer "
-        const val DEFAULT_API_KEY = "shivai-production-key-2026"
+        const val DEFAULT_API_KEY = "shivai_launcher_auth_key_v1"
     }
 }

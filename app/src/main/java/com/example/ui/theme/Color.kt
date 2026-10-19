@@ -31,3 +31,13 @@ val Pink80 = Color(0xFFEFB8C8)
 val Purple40 = Color(0xFF6650a4)
 val PurpleGrey40 = Color(0xFF625b71)
 val Pink40 = Color(0xFF7D5260)
+
+// Solar Daylight Palette (Light Mode)
+val SolarBackground = Color(0xFFF8FAFC)
+val SolarSurface = Color(0xFFFFFFFF)
+val SolarSurfaceVariant = Color(0xFFF1F5F9)
+val SolarCardBorder = Color(0xFFE2E8F0)
+val SolarTextPrimary = Color(0xFF0F172A)
+val SolarTextSecondary = Color(0xFF475569)
+val SolarTextTertiary = Color(0xFF94A3B8)
+

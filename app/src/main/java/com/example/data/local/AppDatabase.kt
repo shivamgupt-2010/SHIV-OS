@@ -2,14 +2,8 @@ package com.example.data.local
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
-import com.example.data.local.dao.ChatHistoryDao
-import com.example.data.local.dao.MemoryDao
-import com.example.data.local.dao.PendingTaskDao
-import com.example.data.local.dao.UserPreferencesDao
-import com.example.data.local.entity.ChatHistoryEntity
-import com.example.data.local.entity.MemoryEntity
-import com.example.data.local.entity.PendingTaskEntity
-import com.example.data.local.entity.UserPreferencesEntity
+import com.example.data.local.dao.*
+import com.example.data.local.entity.*
 
 @Database(
     entities = [
@@ -17,11 +11,17 @@ import com.example.data.local.entity.UserPreferencesEntity
         MemoryEntity::class,
         PendingTaskEntity::class,
         UserPreferencesEntity::class,
-        com.example.data.local.entity.SemanticMemoryEntity::class,
-        com.example.data.local.entity.WorkflowEntity::class,
-        com.example.data.local.entity.WorkflowStepEntity::class
+        SemanticMemoryEntity::class,
+        WorkflowEntity::class,
+        WorkflowStepEntity::class,
+        LauncherLayoutEntity::class,
+        LauncherThemeEntity::class,
+        AppLockPolicyEntity::class,
+        WellbeingBudgetEntity::class,
+        FamilyPolicyEntity::class,
+        SyncQueueEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -29,6 +29,12 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun memoryDao(): MemoryDao
     abstract fun pendingTaskDao(): PendingTaskDao
     abstract fun userPreferencesDao(): UserPreferencesDao
-    abstract fun semanticMemoryDao(): com.example.data.local.dao.SemanticMemoryDao
-    abstract fun workflowDao(): com.example.data.local.dao.WorkflowDao
+    abstract fun semanticMemoryDao(): SemanticMemoryDao
+    abstract fun workflowDao(): WorkflowDao
+    abstract fun launcherLayoutDao(): LauncherLayoutDao
+    abstract fun launcherThemeDao(): LauncherThemeDao
+    abstract fun appLockDao(): AppLockDao
+    abstract fun wellbeingDao(): WellbeingDao
+    abstract fun familyPolicyDao(): FamilyPolicyDao
+    abstract fun syncQueueDao(): SyncQueueDao
 }

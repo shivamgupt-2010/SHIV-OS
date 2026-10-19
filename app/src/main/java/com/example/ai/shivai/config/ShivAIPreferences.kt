@@ -21,7 +21,7 @@ class ShivAIPreferences(context: Context) {
 
     fun getBaseUrl(): String {
         val url = prefs.getString(KEY_BASE_URL, null)
-        if (url.isNullOrBlank() || url.contains("localhost") || url.contains("10.0.2.2") || !url.startsWith("https://")) {
+        if (url.isNullOrBlank() || url.contains("shivai-backend.onrender.com") || url.contains("localhost") || url.contains("10.0.2.2") || !url.startsWith("https://")) {
             return DEFAULT_BASE_URL
         }
         return url.trimEnd('/')
@@ -45,7 +45,7 @@ class ShivAIPreferences(context: Context) {
 
     fun getApiKey(): String {
         val key = prefs.getString(KEY_API_KEY, null)
-        if (key.isNullOrBlank() || key == "test-key" || !key.startsWith("shivai-production")) {
+        if (key.isNullOrBlank() || key == "test-key" || key == "shivai-production-key-2026" || !key.startsWith("shivai_launcher")) {
             return DEFAULT_API_KEY
         }
         return key
@@ -63,8 +63,8 @@ class ShivAIPreferences(context: Context) {
         private const val KEY_USER_ID = "shivai_user_id"
         private const val KEY_API_KEY = "shivai_api_key"
 
-        const val DEFAULT_BASE_URL = "https://shivai-backend.onrender.com/api/v1"
+        const val DEFAULT_BASE_URL = "https://real-shivai.onrender.com"
         const val DEFAULT_USER_ID = "shivam"
-        const val DEFAULT_API_KEY = "shivai-production-key-2026"
+        const val DEFAULT_API_KEY = "shivai_launcher_auth_key_v1"
     }
 }

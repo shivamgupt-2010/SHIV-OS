@@ -174,6 +174,16 @@ class ShivAIPersistentService : Service() {
     }
 
     private fun triggerWakeUpAndLaunch(query: String) {
+        // 0. Notify ShivAI Core Voice Engine & Analytics
+        try {
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    com.example.ShivAiApplication.shivAI.voice.wake()
+                    com.example.ShivAiApplication.shivAI.analytics.logEvent("VOICE_WAKE", """{"query":"$query"}""")
+                } catch (ignored: Exception) {}
+            }
+        } catch (ignored: Exception) {}
+
         // 1. Wake up the screen if sleeping
         try {
             val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager

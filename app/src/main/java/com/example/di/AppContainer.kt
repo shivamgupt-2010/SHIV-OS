@@ -132,12 +132,44 @@ class AppContainer(private val context: Context) {
         com.example.core.launcher.LauncherShellManager(context)
     }
 
+    val appScope: kotlinx.coroutines.CoroutineScope by lazy {
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Default)
+    }
+
     val adaptiveAppPredictor: com.example.core.launcher.AdaptiveAppPredictor by lazy {
         com.example.core.launcher.AdaptiveAppPredictor(
             launcherShellManager,
             contextAwarenessManager,
             usagePatternAnalyzer
         )
+    }
+
+    val layoutManager: com.example.core.launcher.LayoutManager by lazy {
+        com.example.core.launcher.LayoutManager(context, appDatabase.launcherLayoutDao(), appDatabase.launcherThemeDao(), appScope)
+    }
+
+    val studioThemeEngine: com.example.core.studio.StudioThemeEngine by lazy {
+        com.example.core.studio.StudioThemeEngine(appDatabase.launcherThemeDao(), appScope)
+    }
+
+    val appLockManager: com.example.core.lock.AppLockManager by lazy {
+        com.example.core.lock.AppLockManager(context, appDatabase.appLockDao(), appScope)
+    }
+
+    val wellbeingManager: com.example.core.wellbeing.WellbeingManager by lazy {
+        com.example.core.wellbeing.WellbeingManager(context, appDatabase.wellbeingDao(), appScope)
+    }
+
+    val familyManager: com.example.core.family.FamilyManager by lazy {
+        com.example.core.family.FamilyManager(context, appDatabase.familyPolicyDao(), appScope)
+    }
+
+    val cloudSyncEngine: com.example.core.sync.CloudSyncEngine by lazy {
+        com.example.core.sync.CloudSyncEngine(context, appDatabase.syncQueueDao(), appDatabase.launcherLayoutDao(), appDatabase.launcherThemeDao(), appDatabase.familyPolicyDao(), appScope)
+    }
+
+    val shivAIActionDispatcher: com.example.core.ai.ShivAIActionDispatcher by lazy {
+        com.example.core.ai.ShivAIActionDispatcher(studioThemeEngine, layoutManager, appLockManager, wellbeingManager, familyManager)
     }
 
     // Repositories
@@ -160,6 +192,10 @@ class AppContainer(private val context: Context) {
 
     val shivAIClient: com.example.ai.shivai.client.ShivAIClient by lazy {
         com.example.ai.shivai.client.ShivAIClient(shivAIPreferences)
+    }
+
+    val shivAISdk: com.shivai.sdk.ShivAIClient by lazy {
+        com.example.ShivAiApplication.shivAI
     }
 
     val permissionOrchestrator: com.example.core.permissions.PermissionOrchestrator by lazy {

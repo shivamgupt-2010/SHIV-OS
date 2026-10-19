@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">शिव लॉन्चर</string>
+    <string name="accessibility_service_description">शिवएआई स्क्रीन इंटेलिजेंस और ऑटोमेशन लेयर</string>
+    
+    <!-- Navigation & Titles -->
+    <string name="home_title">होम</string>
+    <string name="all_apps_title">सभी ऍप्लिकेशन्स</string>
+    <string name="studio_title">शिव स्टूडियो</string>
+    <string name="lock_title">शिव लॉक</string>
+    <string name="wellbeing_title">शिव वेलबीइंग</string>
+    <string name="family_title">शिव परिवार</string>
+    <string name="settings_title">सेटिंग्स</string>
+    
+    <!-- Actions -->
+    <string name="sign_in_shiv">शिव अकाउंट से लॉगिन करें</string>
+    <string name="sign_out">लॉगआउट</string>
+    <string name="lock_layout">होम लेआउट लॉक करें</string>
+    <string name="search_hint">ऐप्स, सेटिंग्स और सिस्टम खोजें…</string>
+    <string name="swipe_up_hint">सभी ऐप्स के लिए ऊपर स्वाइप करें</string>
+</resources>

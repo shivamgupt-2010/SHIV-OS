@@ -126,6 +126,36 @@ fun SidebarDrawer(
                 onClick = { onNavigate("launcher"); onClose() }
             )
             DrawerNavItem(
+                icon = Icons.Default.Apps,
+                label = "All Apps",
+                isSelected = currentRoute == "all_apps",
+                onClick = { onNavigate("all_apps"); onClose() }
+            )
+            DrawerNavItem(
+                icon = Icons.Default.Palette,
+                label = "SHIV Studio",
+                isSelected = currentRoute == "studio",
+                onClick = { onNavigate("studio"); onClose() }
+            )
+            DrawerNavItem(
+                icon = Icons.Default.Lock,
+                label = "SHIV Lock",
+                isSelected = currentRoute == "lock",
+                onClick = { onNavigate("lock"); onClose() }
+            )
+            DrawerNavItem(
+                icon = Icons.Default.Equalizer,
+                label = "Wellbeing",
+                isSelected = currentRoute == "wellbeing",
+                onClick = { onNavigate("wellbeing"); onClose() }
+            )
+            DrawerNavItem(
+                icon = Icons.Default.FamilyRestroom,
+                label = "Family",
+                isSelected = currentRoute == "family",
+                onClick = { onNavigate("family"); onClose() }
+            )
+            DrawerNavItem(
                 icon = Icons.Default.ChatBubble,
                 label = "Chat",
                 isSelected = currentRoute == "chat",
@@ -150,10 +180,10 @@ fun SidebarDrawer(
                 onClick = { onNavigate("notes"); onClose() }
             )
             DrawerNavItem(
-                icon = Icons.Default.Folder,
-                label = "Files",
-                isSelected = currentRoute == "files",
-                onClick = { onNavigate("files"); onClose() }
+                icon = Icons.Default.Save,
+                label = "Memory",
+                isSelected = currentRoute == "memory",
+                onClick = { onNavigate("memory"); onClose() }
             )
             DrawerNavItem(
                 icon = Icons.Default.Settings,

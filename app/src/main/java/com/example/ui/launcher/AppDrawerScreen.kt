@@ -1,17 +1,29 @@
 package com.example.ui.launcher
 
+import android.content.Context
+import android.content.Intent
+import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
+import android.net.Uri
+import android.provider.Settings
+import android.widget.Toast
+import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,19 +42,71 @@ import com.example.ui.components.CosmicBackground
 import com.example.ui.components.TrishulIcon
 import com.example.ui.theme.*
 
-@OptIn(ExperimentalMaterial3Api::class)
+fun matchAppSearch(query: String, name: String, packageName: String): Boolean {
+    val q = query.trim().lowercase()
+    if (q.isEmpty()) return true
+    val n = name.lowercase()
+    val p = packageName.lowercase()
+
+    // 1. Direct substring match
+    if (n.contains(q) || p.contains(q)) return true
+
+    // 2. Acronym match (e.g. "yt" matches "YouTube")
+    val words = n.split(" ", "_", "-")
+    val acronym = words.mapNotNull { it.firstOrNull()?.lowercaseChar() }.joinToString("")
+    if (acronym.startsWith(q)) return true
+
+    // 3. Typo-tolerant subsequence match (characters in relative order)
+    if (q.length in 2..8) {
+        var qIdx = 0
+        for (char in n) {
+            if (char == q[qIdx]) {
+                qIdx++
+                if (qIdx == q.length) return true
+            }
+        }
+    }
+    return false
+}
+
+fun classifyAppCategory(packageName: String, name: String): String {
+    val p = "$packageName $name".lowercase()
+    return when {
+        p.contains("call") || p.contains("phone") || p.contains("dial") || p.contains("messag") ||
+                p.contains("sms") || p.contains("chat") || p.contains("mail") || p.contains("contact") -> "Communication"
+        p.contains("doc") || p.contains("sheet") || p.contains("note") || p.contains("calc") ||
+                p.contains("calendar") || p.contains("pdf") || p.contains("drive") || p.contains("office") -> "Productivity"
+        p.contains("camera") || p.contains("photo") || p.contains("video") || p.contains("music") ||
+                p.contains("media") || p.contains("audio") || p.contains("youtube") || p.contains("player") -> "Media"
+        p.contains("setting") || p.contains("system") || p.contains("android") || p.contains("security") -> "System"
+        else -> "Tools"
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun AppDrawerScreen(
     viewModel: LauncherViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onNavigate: (String) -> Unit = {}
 ) {
     val allApps by viewModel.installedApps.collectAsState()
+    val currentTheme by viewModel.currentTheme.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
+    var selectedCategory by remember { mutableStateOf("All") }
+    var selectedAppForOptions by remember { mutableStateOf<AppInfo?>(null) }
     val context = LocalContext.current
 
-    val filteredApps = remember(allApps, searchQuery) {
-        if (searchQuery.isBlank()) allApps
-        else allApps.filter { it.name.contains(searchQuery, ignoreCase = true) }
+    val categories = listOf("All", "Communication", "Productivity", "Media", "Tools", "System")
+
+    val filteredApps = remember(allApps, searchQuery, selectedCategory) {
+        allApps.filter { app ->
+            val matchesCategory = if (selectedCategory == "All") true
+            else classifyAppCategory(app.packageName, app.name) == selectedCategory
+
+            val matchesText = matchAppSearch(searchQuery, app.name, app.packageName)
+            matchesCategory && matchesText
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -55,44 +119,53 @@ fun AppDrawerScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .statusBarsPadding()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .padding(horizontal = 20.dp, vertical = 10.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = TextPrimary)
+                        Surface(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .clickable(onClick = onBack),
+                            color = CosmicSurfaceVariant.copy(alpha = 0.6f),
+                            shape = CircleShape
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextPrimary, modifier = Modifier.size(20.dp))
+                            }
                         }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        TrishulIcon(size = 22.dp)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        TrishulIcon(size = 20.dp)
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "All Apps (${allApps.size})",
+                            text = "All Apps (${filteredApps.size})",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                             color = TextPrimary
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                    // Search Bar
+                    // 100% On-Device Private Search Bar
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        color = CosmicSurfaceVariant,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, CosmicCardBorder)
+                        shape = RoundedCornerShape(24.dp),
+                        color = CosmicSurface.copy(alpha = 0.85f),
+                        border = BorderStroke(1.dp, ShivaCyan.copy(alpha = 0.35f))
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.Search, contentDescription = "Search", tint = ShivaCyan)
+                            Icon(Icons.Default.Search, contentDescription = "Search", tint = ShivaCyan, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(10.dp))
                             TextField(
                                 value = searchQuery,
                                 onValueChange = { searchQuery = it },
-                                placeholder = { Text("Search installed apps...", color = TextSecondary, fontSize = 14.sp) },
+                                placeholder = { Text("Filter applications on-device...", color = TextSecondary, fontSize = 14.sp) },
                                 modifier = Modifier.weight(1f),
                                 colors = TextFieldDefaults.colors(
                                     focusedContainerColor = Color.Transparent,
@@ -111,33 +184,224 @@ fun AppDrawerScreen(
                             }
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Category Filter Pills
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        categories.forEach { category ->
+                            val isSelected = selectedCategory == category
+                            Surface(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .clickable { selectedCategory = category },
+                                shape = RoundedCornerShape(14.dp),
+                                color = if (isSelected) ShivaCyan.copy(alpha = 0.2f) else CosmicSurfaceVariant.copy(alpha = 0.5f),
+                                border = BorderStroke(1.dp, if (isSelected) ShivaCyan else CosmicCardBorder.copy(alpha = 0.4f))
+                            ) {
+                                Text(
+                                    text = category,
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                    ),
+                                    color = if (isSelected) ShivaCyan else TextSecondary
+                                )
+                            }
+                        }
+                    }
                 }
             }
         ) { paddingValues ->
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(4),
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(horizontal = 16.dp)
             ) {
-                items(filteredApps, key = { it.packageName }) { app ->
-                    AppGridItem(
-                        app = app,
-                        onClick = { viewModel.onAppClicked(app.packageName) }
+                // If searching, show "Ask ShivAI" action pill
+                if (searchQuery.isNotBlank()) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .clickable { onNavigate("chat") },
+                        color = ShivaIndigo.copy(alpha = 0.25f),
+                        border = BorderStroke(1.dp, ShivaCyan.copy(alpha = 0.4f)),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            TrishulIcon(size = 18.dp)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Ask ShivAI about \"$searchQuery\"",
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = TextPrimary
+                                )
+                                Text(
+                                    text = "Cognitive reasoning, web research & smart actions",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = TextSecondary
+                                )
+                            }
+                            Icon(Icons.Default.ArrowForward, contentDescription = null, tint = ShivaCyan, modifier = Modifier.size(18.dp))
+                        }
+                    }
+                }
+
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(currentTheme.gridColumns.coerceIn(3, 5)),
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(bottom = 24.dp)
+                ) {
+                    items(filteredApps, key = { it.packageName }) { app ->
+                        AppGridItem(
+                            app = app,
+                            iconShape = currentTheme.iconShape,
+                            scalePercent = currentTheme.iconScalePercent,
+                            onClick = { viewModel.onAppClicked(app.packageName) },
+                            onLongClick = { selectedAppForOptions = app }
+                        )
+                    }
+                }
+            }
+        }
+
+        // App Long-Press Options Bottom Sheet
+        if (selectedAppForOptions != null) {
+            val app = selectedAppForOptions!!
+            ModalBottomSheet(
+                onDismissRequest = { selectedAppForOptions = null },
+                containerColor = CosmicSurface,
+                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Text(
+                        text = app.name,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = TextPrimary
                     )
+                    Text(
+                        text = app.packageName,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary
+                    )
+
+                    Divider(color = CosmicCardBorder.copy(alpha = 0.5f))
+
+                    // Open App
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable {
+                                selectedAppForOptions = null
+                                viewModel.onAppClicked(app.packageName)
+                            },
+                        color = CosmicSurfaceVariant.copy(alpha = 0.6f)
+                    ) {
+                        Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Launch, contentDescription = null, tint = ShivaCyan)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text("Open Application", color = TextPrimary, fontWeight = FontWeight.Medium)
+                        }
+                    }
+
+                    // App Details
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable {
+                                selectedAppForOptions = null
+                                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                    data = Uri.fromParts("package", app.packageName, null)
+                                }
+                                context.startActivity(intent)
+                            },
+                        color = CosmicSurfaceVariant.copy(alpha = 0.6f)
+                    ) {
+                        Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Info, contentDescription = null, tint = ShivaIndigo)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text("App Details & Permissions", color = TextPrimary, fontWeight = FontWeight.Medium)
+                        }
+                    }
+
+                    // Protect with SHIV Lock
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable {
+                                selectedAppForOptions = null
+                                val isLocked = viewModel.appLockManager?.isAppLocked(app.packageName) == true
+                                viewModel.appLockManager?.setAppLocked(app.packageName, !isLocked)
+                                Toast.makeText(
+                                    context,
+                                    if (!isLocked) "${app.name} protected by SHIV Lock" else "${app.name} unlocked",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            },
+                        color = CosmicSurfaceVariant.copy(alpha = 0.6f)
+                    ) {
+                        Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Lock, contentDescription = null, tint = ShivaAmber)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            val isCurrentlyLocked = viewModel.appLockManager?.isAppLocked(app.packageName) == true
+                            Text(if (isCurrentlyLocked) "Remove SHIV Lock" else "Protect with SHIV Lock", color = TextPrimary, fontWeight = FontWeight.Medium)
+                        }
+                    }
+
+                    // Uninstall
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable {
+                                selectedAppForOptions = null
+                                val intent = Intent(Intent.ACTION_UNINSTALL_PACKAGE).apply {
+                                    data = Uri.parse("package:${app.packageName}")
+                                }
+                                context.startActivity(intent)
+                            },
+                        color = CosmicSurfaceVariant.copy(alpha = 0.6f)
+                    ) {
+                        Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Delete, contentDescription = null, tint = ShivaRed)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text("Uninstall Application", color = ShivaRed, fontWeight = FontWeight.Medium)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
                 }
             }
         }
     }
 }
 
-fun loadAppIconBitmap(context: android.content.Context, packageName: String): androidx.compose.ui.graphics.ImageBitmap? {
+fun loadAppIconBitmap(context: Context, packageName: String): androidx.compose.ui.graphics.ImageBitmap? {
     return try {
         val drawable = context.packageManager.getApplicationIcon(packageName)
-        if (drawable is android.graphics.drawable.BitmapDrawable && drawable.bitmap != null) {
+        if (drawable is BitmapDrawable && drawable.bitmap != null) {
             return drawable.bitmap.asImageBitmap()
         }
         val width = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 128
@@ -152,29 +416,46 @@ fun loadAppIconBitmap(context: android.content.Context, packageName: String): an
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AppGridItem(
     app: AppInfo,
-    onClick: () -> Unit
+    iconShape: String = "SQUIRCLE",
+    scalePercent: Int = 100,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val appIcon = remember(app.packageName) {
         loadAppIconBitmap(context, app.packageName)
     }
 
+    val shapeCorner = when (iconShape) {
+        "CIRCLE" -> CircleShape
+        "ROUNDED_RECT" -> RoundedCornerShape(8.dp)
+        "TEARDROP" -> RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomEnd = 20.dp, bottomStart = 4.dp)
+        else -> RoundedCornerShape(16.dp)
+    }
+
+    val baseSize = 56.dp
+    val scaledSize = (baseSize.value * (scalePercent / 100f)).dp
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick)
-            .padding(vertical = 8.dp, horizontal = 4.dp),
+            .clip(RoundedCornerShape(18.dp))
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            )
+            .padding(vertical = 6.dp, horizontal = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(
             modifier = Modifier
-                .size(56.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(CosmicSurfaceVariant.copy(alpha = 0.5f))
+                .size(scaledSize)
+                .clip(shapeCorner)
+                .background(CosmicSurfaceVariant.copy(alpha = 0.6f))
                 .padding(2.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -183,8 +464,8 @@ fun AppGridItem(
                     bitmap = appIcon,
                     contentDescription = app.name,
                     modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(12.dp)),
+                        .size(scaledSize - 6.dp)
+                        .clip(shapeCorner),
                     contentScale = androidx.compose.ui.layout.ContentScale.Fit
                 )
             } else {
@@ -200,9 +481,9 @@ fun AppGridItem(
 
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    shape = RoundedCornerShape(14.dp),
-                    color = accentColor.copy(alpha = 0.18f),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, accentColor.copy(alpha = 0.35f))
+                    shape = shapeCorner,
+                    color = accentColor.copy(alpha = 0.2f),
+                    border = BorderStroke(1.dp, accentColor.copy(alpha = 0.4f))
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Text(
@@ -215,11 +496,11 @@ fun AppGridItem(
             }
         }
 
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
         Text(
             text = app.name,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, fontWeight = FontWeight.Medium),
             color = TextPrimary,
             textAlign = TextAlign.Center,
             maxLines = 1,

@@ -42,16 +42,30 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="shivlauncher" android:host="oauth" android:path="/callback" />
+            </intent-filter>
         </activity>
 
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="ShivAI Studio"
+            android:launchMode="singleTask"
             android:theme="@style/Theme.MyApplication">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <!-- Handles redirect from SHIV Identity -->
+                <data android:scheme="shivlauncher" android:host="oauth" android:path="/callback" />
             </intent-filter>
         </activity>
 

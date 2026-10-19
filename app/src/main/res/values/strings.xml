@@ -1,4 +1,20 @@
 <resources>
-    <string name="app_name">ShivAI</string>
+    <string name="app_name">SHIV Launcher</string>
     <string name="accessibility_service_description">ShivAI Screen Intelligence and Automation Layer</string>
+    
+    <!-- Navigation & Titles -->
+    <string name="home_title">Home</string>
+    <string name="all_apps_title">All Applications</string>
+    <string name="studio_title">SHIV Studio</string>
+    <string name="lock_title">SHIV Lock</string>
+    <string name="wellbeing_title">SHIV Wellbeing</string>
+    <string name="family_title">SHIV Family</string>
+    <string name="settings_title">Settings</string>
+    
+    <!-- Actions -->
+    <string name="sign_in_shiv">Sign in with SHIV</string>
+    <string name="sign_out">Sign Out</string>
+    <string name="lock_layout">Lock Home Layout</string>
+    <string name="search_hint">Search apps, settings &amp; system…</string>
+    <string name="swipe_up_hint">Swipe up for all apps</string>
 </resources>

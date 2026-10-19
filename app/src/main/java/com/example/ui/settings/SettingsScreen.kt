@@ -65,6 +65,8 @@ fun SettingsScreen(
                 ShivAICloudConfigCard(preferences = shivAIPreferences, client = shivAIClient)
             }
 
+            ShivIdentityOAuthCard()
+
             Text("Transparency & Control", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
             Text("These permissions power the AI engine. You have full control. Disabling permissions will fall back to Safe-Mode operation.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
@@ -312,4 +314,153 @@ fun ShivAICloudConfigCard(
         }
     }
 }
+
+@Composable
+fun ShivIdentityOAuthCard() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var isLoggedIn by remember { mutableStateOf(com.example.auth.ShivIdentityAuth.isLoggedIn(context)) }
+    var userProfileText by remember { mutableStateOf<String?>(null) }
+    var isTestingService by remember { mutableStateOf(false) }
+    var serviceTestStatus by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        if (isLoggedIn) {
+            val token = com.example.auth.ShivIdentityAuth.getAccessToken(context)
+            if (token != null) {
+                com.example.auth.ShivIdentityAuth.fetchUserInfo(token) { profile ->
+                    if (profile != null) {
+                        userProfileText = profile.optString("name", profile.optString("preferred_username", "Logged In"))
+                    }
+                }
+            }
+        }
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    "SHIV Identity (OAuth PKCE)",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Surface(
+                    color = if (isLoggedIn) Color(0xFF2E7D32).copy(alpha = 0.2f) else MaterialTheme.colorScheme.error.copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = if (isLoggedIn) "ACTIVE" else "PUBLIC CLIENT",
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isLoggedIn) Color(0xFF2E7D32) else MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+
+            Text(
+                "Authorization Code Flow with PKCE (RFC 7636). Redirects securely via custom Android deep link shivlauncher://oauth/callback.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Surface(
+                color = MaterialTheme.colorScheme.surface,
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Client ID: shiv_client_1d07df81d86aa737330cd3e9", style = MaterialTheme.typography.bodySmall, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
+                    Text("Redirect URI: shivlauncher://oauth/callback", style = MaterialTheme.typography.bodySmall, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
+                    Text("Issuer: https://shiv-database.onrender.com", style = MaterialTheme.typography.bodySmall, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
+                    if (isLoggedIn && userProfileText != null) {
+                        Text("Active User: $userProfileText", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
+                    }
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (!isLoggedIn) {
+                    Button(
+                        onClick = {
+                            com.example.auth.ShivIdentityAuth.startSignIn(context)
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Sign In with SHIV")
+                    }
+                } else {
+                    OutlinedButton(
+                        onClick = {
+                            com.example.auth.ShivIdentityAuth.signOut(context)
+                            isLoggedIn = false
+                            userProfileText = null
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Sign Out")
+                    }
+                }
+
+                FilledTonalButton(
+                    onClick = {
+                        isTestingService = true
+                        serviceTestStatus = null
+                        val okhttp = okhttp3.OkHttpClient()
+                        val req = okhttp3.Request.Builder()
+                            .url("https://shiv-database.onrender.com/health")
+                            .get()
+                            .build()
+                        okhttp.newCall(req).enqueue(object : okhttp3.Callback {
+                            override fun onFailure(call: okhttp3.Call, e: java.io.IOException) {
+                                isTestingService = false
+                                serviceTestStatus = "Service unreachable: ${e.message}"
+                            }
+                            override fun onResponse(call: okhttp3.Call, response: okhttp3.Response) {
+                                isTestingService = false
+                                serviceTestStatus = if (response.isSuccessful) "Service Online: 200 OK (PKCE Ready)" else "Status: ${response.code}"
+                            }
+                        })
+                    },
+                    enabled = !isTestingService,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(if (isTestingService) "Testing..." else "Test Service")
+                }
+            }
+
+            serviceTestStatus?.let { status ->
+                Surface(
+                    color = if (status.contains("Online") || status.contains("200")) Color(0xFF2E7D32).copy(alpha = 0.15f) else MaterialTheme.colorScheme.errorContainer,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = status,
+                        modifier = Modifier.padding(8.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (status.contains("Online") || status.contains("200")) Color(0xFF2E7D32) else MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+            }
+        }
+    }
+}
+
 

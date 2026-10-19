@@ -29,6 +29,7 @@ class LauncherActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        handleAuthRedirect(intent)
         enableEdgeToEdge()
 
         try {
@@ -60,7 +61,12 @@ class LauncherActivity : ComponentActivity() {
                                 appContainer.launcherShellManager,
                                 appContainer.adaptiveAppPredictor,
                                 appContainer.appDatabase.workflowDao(),
-                                appContainer.telemetryManager
+                                appContainer.telemetryManager,
+                                appContainer.layoutManager,
+                                appContainer.studioThemeEngine,
+                                appContainer.appLockManager,
+                                appContainer.wellbeingManager,
+                                appContainer.familyManager
                             ) as T
                         }
                     }
@@ -74,7 +80,8 @@ class LauncherActivity : ComponentActivity() {
                                 appContainer.centralOrchestrator,
                                 appContainer.voiceSessionManager,
                                 appContainer.appDatabase.chatHistoryDao(),
-                                appContainer.launcherShellManager
+                                appContainer.launcherShellManager,
+                                appContainer.shivAIActionDispatcher
                             ) as T
                         }
                     }
@@ -86,10 +93,14 @@ class LauncherActivity : ComponentActivity() {
                 }
 
                 if (!hasSeenOnboardingState.value) {
-                    com.example.ui.onboarding.OnboardingScreen(onComplete = {
-                        prefs.edit().putBoolean("has_seen_onboarding", true).apply()
-                        hasSeenOnboardingState.value = true
-                    })
+                    com.example.ui.onboarding.OnboardingScreen(
+                        layoutManager = appContainer.layoutManager,
+                        themeEngine = appContainer.studioThemeEngine,
+                        onComplete = {
+                            prefs.edit().putBoolean("has_seen_onboarding", true).apply()
+                            hasSeenOnboardingState.value = true
+                        }
+                    )
                 } else {
                     val currentRoute by currentRouteFlow.collectAsState()
 
@@ -171,6 +182,31 @@ class LauncherActivity : ComponentActivity() {
                                     )
                                     "all_apps" -> AppDrawerScreen(
                                         viewModel = launcherViewModel,
+                                        onBack = { currentRouteFlow.value = "launcher" },
+                                        onNavigate = { currentRouteFlow.value = it }
+                                    )
+                                    "studio" -> com.example.ui.studio.StudioScreen(
+                                        themeEngine = appContainer.studioThemeEngine,
+                                        layoutManager = appContainer.layoutManager,
+                                        onBack = { currentRouteFlow.value = "launcher" }
+                                    )
+                                    "lock" -> com.example.ui.lock.AppLockScreen(
+                                        appLockManager = appContainer.appLockManager,
+                                        installedApps = launcherViewModel.installedApps.collectAsState().value,
+                                        onBack = { currentRouteFlow.value = "launcher" }
+                                    )
+                                    "wellbeing" -> com.example.ui.wellbeing.WellbeingScreen(
+                                        wellbeingManager = appContainer.wellbeingManager,
+                                        installedApps = launcherViewModel.installedApps.collectAsState().value,
+                                        onBack = { currentRouteFlow.value = "launcher" }
+                                    )
+                                    "family" -> com.example.ui.family.FamilyScreen(
+                                        familyManager = appContainer.familyManager,
+                                        installedApps = launcherViewModel.installedApps.collectAsState().value,
+                                        onBack = { currentRouteFlow.value = "launcher" }
+                                    )
+                                    "memory" -> com.example.ui.memory.MemoryScreen(
+                                        viewModel = com.example.ui.memory.MemoryViewModel(appContainer.semanticMemoryRepository),
                                         onBack = { currentRouteFlow.value = "launcher" }
                                     )
                                     else -> LauncherScreen(
@@ -179,6 +215,64 @@ class LauncherActivity : ComponentActivity() {
                                         onOpenSidebar = { coroutineScope.launch { drawerState.open() } }
                                     )
                                 }
+                            }
+
+                            // 1. App Lock Prompt Dialog
+                            val lockedPkg by launcherViewModel.pendingAppLock.collectAsState()
+                            if (lockedPkg != null) {
+                                AlertDialog(
+                                    onDismissRequest = { launcherViewModel.dismissPrompts() },
+                                    icon = { Icon(androidx.compose.material.icons.Icons.Default.Lock, contentDescription = null, tint = com.example.ui.theme.ShivaCyan) },
+                                    title = { Text("App Protected by SHIV Lock") },
+                                    text = { Text("Authentication required to launch this application.", style = MaterialTheme.typography.bodyMedium) },
+                                    confirmButton = {
+                                        Button(onClick = { launcherViewModel.unlockAndLaunch(lockedPkg!!) }) {
+                                            Text("Authenticate & Launch")
+                                        }
+                                    },
+                                    dismissButton = {
+                                        TextButton(onClick = { launcherViewModel.dismissPrompts() }) {
+                                            Text("Cancel")
+                                        }
+                                    }
+                                )
+                            }
+
+                            // 2. Intentional Opening Friction Dialog
+                            val frictionPkg by launcherViewModel.pendingIntentionalPrompt.collectAsState()
+                            if (frictionPkg != null) {
+                                AlertDialog(
+                                    onDismissRequest = { launcherViewModel.dismissPrompts() },
+                                    icon = { Icon(androidx.compose.material.icons.Icons.Default.HourglassBottom, contentDescription = null, tint = com.example.ui.theme.ShivaCyan) },
+                                    title = { Text("Mindful Pause") },
+                                    text = { Text("Take a deep breath. Are you opening this app intentionally or by habit?", style = MaterialTheme.typography.bodyMedium) },
+                                    confirmButton = {
+                                        Button(onClick = { launcherViewModel.confirmIntentionalLaunch(frictionPkg!!) }) {
+                                            Text("Open App")
+                                        }
+                                    },
+                                    dismissButton = {
+                                        TextButton(onClick = { launcherViewModel.dismissPrompts() }) {
+                                            Text("Put Down Phone")
+                                        }
+                                    }
+                                )
+                            }
+
+                            // 3. Family Supervision Restriction Dialog
+                            val familyBlockedPkg by launcherViewModel.pendingFamilyRestriction.collectAsState()
+                            if (familyBlockedPkg != null) {
+                                AlertDialog(
+                                    onDismissRequest = { launcherViewModel.dismissPrompts() },
+                                    icon = { Icon(androidx.compose.material.icons.Icons.Default.FamilyRestroom, contentDescription = null, tint = com.example.ui.theme.ShivaOrange) },
+                                    title = { Text("Restricted by SHIV Family") },
+                                    text = { Text("This application is currently restricted under child supervision or active bedtime curfew.", style = MaterialTheme.typography.bodyMedium) },
+                                    confirmButton = {
+                                        Button(onClick = { launcherViewModel.dismissPrompts() }) {
+                                            Text("OK")
+                                        }
+                                    }
+                                )
                             }
                         }
                     }
@@ -190,8 +284,24 @@ class LauncherActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        handleAuthRedirect(intent)
         intent.getStringExtra("EXTRA_TARGET_SCREEN")?.let {
             currentRouteFlow.value = it
+        }
+    }
+
+    private fun handleAuthRedirect(intent: Intent?) {
+        val uri = intent?.data
+        if (uri != null && uri.scheme == "shivlauncher" && uri.host == "oauth" && uri.path == "/callback") {
+            com.example.auth.ShivIdentityAuth.handleRedirect(this, uri) { success, result ->
+                runOnUiThread {
+                    if (success) {
+                        android.widget.Toast.makeText(this, "SHIV Identity authenticated successfully!", android.widget.Toast.LENGTH_LONG).show()
+                    } else {
+                        android.widget.Toast.makeText(this, "Authentication failed: $result", android.widget.Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
         }
     }
 }

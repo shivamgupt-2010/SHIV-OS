@@ -30,12 +30,39 @@ private val CosmicColorScheme = darkColorScheme(
     outline = CosmicCardBorder
 )
 
+private val SolarLightColorScheme = lightColorScheme(
+    primary = ShivaIndigo,
+    onPrimary = TextPrimary,
+    primaryContainer = SolarSurfaceVariant,
+    onPrimaryContainer = ShivaBlue,
+    secondary = ShivaCyan,
+    onSecondary = SolarSurface,
+    secondaryContainer = SolarSurfaceVariant,
+    onSecondaryContainer = SolarTextPrimary,
+    tertiary = ShivaPurple,
+    onTertiary = TextPrimary,
+    background = SolarBackground,
+    onBackground = SolarTextPrimary,
+    surface = SolarSurface,
+    onSurface = SolarTextPrimary,
+    surfaceVariant = SolarSurfaceVariant,
+    onSurfaceVariant = SolarTextSecondary,
+    outline = SolarCardBorder
+)
+
 @Composable
 fun MyApplicationTheme(
     darkTheme: Boolean = true, // Default to stunning cosmic dark mode
     dynamicColor: Boolean = false, // Preserve bespoke cosmic styling
     content: @Composable () -> Unit,
 ) {
-    val colorScheme = CosmicColorScheme
+    val context = LocalContext.current
+    val colorScheme = when {
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        }
+        darkTheme -> CosmicColorScheme
+        else -> SolarLightColorScheme
+    }
     MaterialTheme(colorScheme = colorScheme, typography = Typography, content = content)
 }

@@ -17,6 +17,7 @@ import com.example.ui.navigation.MainNavGraph
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+    handleAuthRedirect(intent)
     try {
       enableEdgeToEdge()
       setContent {
@@ -27,6 +28,27 @@ class MainActivity : ComponentActivity() {
       }
     } catch (e: Exception) {
       android.util.Log.e("MainActivity", "Fatal error in onCreate", e)
+    }
+  }
+
+  override fun onNewIntent(intent: android.content.Intent) {
+    super.onNewIntent(intent)
+    setIntent(intent)
+    handleAuthRedirect(intent)
+  }
+
+  private fun handleAuthRedirect(intent: android.content.Intent?) {
+    val uri = intent?.data
+    if (uri != null && uri.scheme == "shivlauncher" && uri.host == "oauth" && uri.path == "/callback") {
+      com.example.auth.ShivIdentityAuth.handleRedirect(this, uri) { success, result ->
+        runOnUiThread {
+          if (success) {
+            android.widget.Toast.makeText(this, "SHIV Identity authenticated successfully!", android.widget.Toast.LENGTH_LONG).show()
+          } else {
+            android.widget.Toast.makeText(this, "Authentication failed: $result", android.widget.Toast.LENGTH_LONG).show()
+          }
+        }
+      }
     }
   }
 }

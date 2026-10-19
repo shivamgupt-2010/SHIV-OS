@@ -51,6 +51,17 @@ class LauncherShellManager(context: Context) {
 
     fun launchApp(packageName: String) {
         val ctx = contextRef.get() ?: return
+        try {
+            kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                try {
+                    com.example.ShivAiApplication.shivAI.analytics.logEvent(
+                        "APP_OPENED",
+                        """{"package":"$packageName","timestamp":${System.currentTimeMillis()}}"""
+                    )
+                } catch (ignored: Exception) {}
+            }
+        } catch (ignored: Exception) {}
+
         val launchIntent = ctx.packageManager.getLaunchIntentForPackage(packageName)
         if (launchIntent != null) {
             launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
