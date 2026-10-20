@@ -520,11 +520,25 @@ fun BottomBarTab(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    androidx.compose.material3.NavigationBarItem(
-        icon = { Icon(icon, contentDescription = label) },
-        label = { Text(label) },
-        selected = isSelected,
-        onClick = onClick
-    )
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = if (isSelected) ShivaCyan else TextSecondary,
+            modifier = Modifier.size(24.dp)
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (isSelected) ShivaCyan else TextSecondary
+        )
+    }
 }
+
 

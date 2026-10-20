@@ -131,7 +131,7 @@ class ShivAIActionDispatcher(
     fun executeAction(action: ShivAIAction, isUserConfirmed: Boolean = false): Boolean {
         return when (action) {
             is ShivAIAction.ApplyTheme -> {
-                previousThemePreset = themeEngine.currentTheme.value.key
+                previousThemePreset = themeEngine.currentTheme.value.themePreset
                 themeEngine.applyPreset(action.presetKey)
                 true
             }
