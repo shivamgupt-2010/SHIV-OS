@@ -48,8 +48,9 @@ class LauncherActivity : ComponentActivity() {
         }
 
         setContent {
-            MyApplicationTheme {
-                val appContainer = (application as ShivAiApplication).container
+            val appContainer = (application as ShivAiApplication).container
+            val currentTheme by appContainer.studioThemeEngine.currentTheme.collectAsState()
+            MyApplicationTheme(theme = currentTheme) {
                 val coroutineScope = rememberCoroutineScope()
                 val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 
@@ -190,19 +191,36 @@ class LauncherActivity : ComponentActivity() {
                                         layoutManager = appContainer.layoutManager,
                                         onBack = { currentRouteFlow.value = "launcher" }
                                     )
-                                    "lock" -> com.example.ui.lock.AppLockScreen(
+                                    "safety_security" -> com.example.ui.security.SafetySecurityCenterScreen(
                                         appLockManager = appContainer.appLockManager,
-                                        installedApps = launcherViewModel.installedApps.collectAsState().value,
-                                        onBack = { currentRouteFlow.value = "launcher" }
-                                    )
-                                    "wellbeing" -> com.example.ui.wellbeing.WellbeingScreen(
+                                        familyManager = appContainer.familyManager,
                                         wellbeingManager = appContainer.wellbeingManager,
                                         installedApps = launcherViewModel.installedApps.collectAsState().value,
+                                        initialSection = com.example.ui.security.SafetySection.PARENTAL,
                                         onBack = { currentRouteFlow.value = "launcher" }
                                     )
-                                    "family" -> com.example.ui.family.FamilyScreen(
+                                    "lock" -> com.example.ui.security.SafetySecurityCenterScreen(
+                                        appLockManager = appContainer.appLockManager,
                                         familyManager = appContainer.familyManager,
+                                        wellbeingManager = appContainer.wellbeingManager,
                                         installedApps = launcherViewModel.installedApps.collectAsState().value,
+                                        initialSection = com.example.ui.security.SafetySection.LOCK,
+                                        onBack = { currentRouteFlow.value = "launcher" }
+                                    )
+                                    "wellbeing" -> com.example.ui.security.SafetySecurityCenterScreen(
+                                        appLockManager = appContainer.appLockManager,
+                                        familyManager = appContainer.familyManager,
+                                        wellbeingManager = appContainer.wellbeingManager,
+                                        installedApps = launcherViewModel.installedApps.collectAsState().value,
+                                        initialSection = com.example.ui.security.SafetySection.WELLBEING,
+                                        onBack = { currentRouteFlow.value = "launcher" }
+                                    )
+                                    "family" -> com.example.ui.security.SafetySecurityCenterScreen(
+                                        appLockManager = appContainer.appLockManager,
+                                        familyManager = appContainer.familyManager,
+                                        wellbeingManager = appContainer.wellbeingManager,
+                                        installedApps = launcherViewModel.installedApps.collectAsState().value,
+                                        initialSection = com.example.ui.security.SafetySection.PARENTAL,
                                         onBack = { currentRouteFlow.value = "launcher" }
                                     )
                                     "memory" -> com.example.ui.memory.MemoryScreen(

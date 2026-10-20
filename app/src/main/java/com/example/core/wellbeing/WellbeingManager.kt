@@ -17,11 +17,26 @@ data class AppUsageRecord(
     val lastTimeUsed: Long
 )
 
+enum class FocusModeType(val title: String, val defaultMinutes: Int, val description: String) {
+    STUDY("Study Mode", 45, "Blocks games & entertainment, permits educational apps"),
+    WORK("Work Mode", 60, "Mutes casual notifications, keeps communication tools"),
+    SLEEP("Sleep Mode", 480, "Downtime enforcement, silent mode & dimmed ambient"),
+    DEEP_FOCUS("Deep Focus", 25, "Pomodoro interval with absolute distraction blocking"),
+    CUSTOM("Custom Mode", 30, "User-configured duration and app exceptions")
+}
+
 data class FocusSession(
     val title: String,
+    val modeType: FocusModeType = FocusModeType.DEEP_FOCUS,
     val durationMinutes: Int,
     val remainingSeconds: Int,
-    val isActive: Boolean
+    val isActive: Boolean,
+    val isPaused: Boolean = false
+)
+
+data class DayUsageSummary(
+    val dayLabel: String,
+    val totalMinutes: Long
 )
 
 class WellbeingManager(
@@ -29,11 +44,31 @@ class WellbeingManager(
     private val wellbeingDao: WellbeingDao,
     private val scope: CoroutineScope
 ) {
+    private val prefs = context.getSharedPreferences("shiv_wellbeing_prefs", Context.MODE_PRIVATE)
+
     val budgets: StateFlow<List<WellbeingBudgetEntity>> = wellbeingDao.getAllBudgetsFlow()
         .stateIn(scope, SharingStarted.Eagerly, emptyList())
 
-    private val _focusSession = MutableStateFlow(FocusSession("Study & Deep Work", 25, 25 * 60, false))
+    private val _focusSession = MutableStateFlow(
+        FocusSession(FocusModeType.DEEP_FOCUS.title, FocusModeType.DEEP_FOCUS, 25, 25 * 60, false)
+    )
     val focusSession: StateFlow<FocusSession> = _focusSession.asStateFlow()
+
+    private val _dailyUnlockCount = MutableStateFlow(prefs.getInt("unlock_count_today", 42))
+    val dailyUnlockCount: StateFlow<Int> = _dailyUnlockCount.asStateFlow()
+
+    private val _dailyNotificationCount = MutableStateFlow(prefs.getInt("notification_count_today", 138))
+    val dailyNotificationCount: StateFlow<Int> = _dailyNotificationCount.asStateFlow()
+
+    val weeklyUsageSummary: List<DayUsageSummary> = listOf(
+        DayUsageSummary("Mon", 185),
+        DayUsageSummary("Tue", 210),
+        DayUsageSummary("Wed", 160),
+        DayUsageSummary("Thu", 195),
+        DayUsageSummary("Fri", 240),
+        DayUsageSummary("Sat", 290),
+        DayUsageSummary("Sun", 175)
+    )
 
     fun hasUsagePermission(): Boolean {
         val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? android.app.AppOpsManager ?: return false
@@ -123,14 +158,53 @@ class WellbeingManager(
     fun startFocusSession(durationMinutes: Int = 25, title: String = "Deep Work") {
         _focusSession.value = FocusSession(
             title = title,
+            modeType = FocusModeType.DEEP_FOCUS,
             durationMinutes = durationMinutes,
             remainingSeconds = durationMinutes * 60,
-            isActive = true
+            isActive = true,
+            isPaused = false
         )
+    }
+
+    fun startFocusMode(mode: FocusModeType, durationMinutes: Int = mode.defaultMinutes) {
+        _focusSession.value = FocusSession(
+            title = mode.title,
+            modeType = mode,
+            durationMinutes = durationMinutes,
+            remainingSeconds = durationMinutes * 60,
+            isActive = true,
+            isPaused = false
+        )
+    }
+
+    fun pauseFocusSession() {
+        val curr = _focusSession.value
+        if (curr.isActive) {
+            _focusSession.value = curr.copy(isPaused = true)
+        }
+    }
+
+    fun resumeFocusSession() {
+        val curr = _focusSession.value
+        if (curr.isActive) {
+            _focusSession.value = curr.copy(isPaused = false)
+        }
     }
 
     fun stopFocusSession() {
         val curr = _focusSession.value
-        _focusSession.value = curr.copy(isActive = false)
+        _focusSession.value = curr.copy(isActive = false, isPaused = false)
+    }
+
+    fun recordDeviceUnlock() {
+        val count = _dailyUnlockCount.value + 1
+        _dailyUnlockCount.value = count
+        prefs.edit().putInt("unlock_count_today", count).apply()
+    }
+
+    fun recordNotificationReceived() {
+        val count = _dailyNotificationCount.value + 1
+        _dailyNotificationCount.value = count
+        prefs.edit().putInt("notification_count_today", count).apply()
     }
 }

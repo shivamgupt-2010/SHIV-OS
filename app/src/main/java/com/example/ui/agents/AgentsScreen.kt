@@ -186,8 +186,8 @@ fun AgentsScreen(
             topBar = {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    color = CosmicSurface.copy(alpha = 0.95f),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, CosmicCardBorder.copy(alpha = 0.5f))
+                    color = ShivTheme.colors.surface.copy(alpha = 0.95f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, ShivTheme.colors.cardBorder.copy(alpha = 0.5f))
                 ) {
                     Row(
                         modifier = Modifier
@@ -199,14 +199,14 @@ fun AgentsScreen(
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = onOpenSidebar) {
-                                Icon(Icons.Default.Menu, contentDescription = "Sidebar", tint = TextPrimary)
+                                Icon(Icons.Default.Menu, contentDescription = "Sidebar", tint = ShivTheme.colors.textPrimary)
                             }
                             TrishulIcon(size = 24.dp)
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = "Cognitive Workforce",
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                color = TextPrimary
+                                color = ShivTheme.colors.textPrimary
                             )
                         }
 
@@ -249,9 +249,9 @@ fun AgentsScreen(
                 item {
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        color = CosmicSurfaceVariant,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, CosmicCardBorder)
+                        shape = RoundedCornerShape(ShivTheme.cardRadius),
+                        color = ShivTheme.colors.surfaceVariant,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, ShivTheme.colors.cardBorder)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Row(
@@ -263,15 +263,15 @@ fun AgentsScreen(
                                     Text(
                                         text = "ShivAI Cognitive Core Architecture",
                                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                        color = TextPrimary
+                                        color = ShivTheme.colors.textPrimary
                                     )
                                     Text(
-                                        text = "Hierarchical Multi-Agent Workforce & Shared Memory Bus",
+                                        text = "Converse with ShivAI • ShivAI orchestrates & assigns tasks to agents",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = TextSecondary
+                                        color = ShivTheme.colors.textSecondary
                                     )
                                 }
-                                Icon(Icons.Default.Hub, contentDescription = null, tint = ShivaCyan, modifier = Modifier.size(24.dp))
+                                Icon(Icons.Default.Hub, contentDescription = null, tint = ShivTheme.colors.primary, modifier = Modifier.size(24.dp))
                             }
 
                             Spacer(modifier = Modifier.height(14.dp))
@@ -289,9 +289,9 @@ fun AgentsScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "SELECT AGENT FOR AUTONOMOUS TASK",
+                        text = "AUTONOMOUS AGENTS (ORCHESTRATED BY SHIVAI)",
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = ShivaCyan
+                        color = ShivTheme.colors.primary
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
@@ -341,9 +341,9 @@ fun AgentsScreen(
                                 }
                             },
                             enabled = !isTaskExecuting && customTaskPrompt.isNotBlank(),
-                            colors = ButtonDefaults.buttonColors(containerColor = ShivaCyan)
+                            colors = ButtonDefaults.buttonColors(containerColor = ShivTheme.colors.primary)
                         ) {
-                            Text(if (isTaskExecuting) "Executing..." else "Dispatch Task", color = Color.Black, fontWeight = FontWeight.Bold)
+                            Text(if (isTaskExecuting) "Executing..." else "Dispatch Task", color = if (ShivTheme.isDark) Color.Black else Color.White, fontWeight = FontWeight.Bold)
                         }
                     },
                     dismissButton = {
@@ -351,14 +351,14 @@ fun AgentsScreen(
                             onClick = { selectedAgentForTask = null },
                             enabled = !isTaskExecuting
                         ) {
-                            Text("Cancel", color = TextSecondary)
+                            Text("Cancel", color = ShivTheme.colors.textSecondary)
                         }
                     },
                     title = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(selectedAgentForTask!!.icon, contentDescription = null, tint = selectedAgentForTask!!.iconColor, modifier = Modifier.size(24.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(selectedAgentForTask!!.name, color = TextPrimary)
+                            Text(selectedAgentForTask!!.name, color = ShivTheme.colors.textPrimary)
                         }
                     },
                     text = {
@@ -366,8 +366,20 @@ fun AgentsScreen(
                             Text(
                                 text = selectedAgentForTask!!.description,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = TextSecondary
+                                color = ShivTheme.colors.textSecondary
                             )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = ShivTheme.colors.surfaceVariant
+                            ) {
+                                Text(
+                                    text = "Task will be submitted to ShivAI, which assigns subtasks to ${selectedAgentForTask!!.name}.",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = ShivTheme.colors.primary,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+                                )
+                            }
                             Spacer(modifier = Modifier.height(12.dp))
 
                             OutlinedTextField(
@@ -381,23 +393,23 @@ fun AgentsScreen(
 
                             if (isTaskExecuting) {
                                 Spacer(modifier = Modifier.height(14.dp))
-                                LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = ShivaCyan)
+                                LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = ShivTheme.colors.primary)
                                 Spacer(modifier = Modifier.height(6.dp))
-                                Text("Reasoning pipeline active on server...", style = MaterialTheme.typography.labelSmall, color = ShivaCyan)
+                                Text("Reasoning pipeline active on server...", style = MaterialTheme.typography.labelSmall, color = ShivTheme.colors.primary)
                             }
 
                             if (taskResultText != null) {
                                 Spacer(modifier = Modifier.height(14.dp))
                                 Surface(
                                     shape = RoundedCornerShape(10.dp),
-                                    color = CosmicSurfaceVariant,
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, CosmicCardBorder),
+                                    color = ShivTheme.colors.surfaceVariant,
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, ShivTheme.colors.cardBorder),
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Column(modifier = Modifier.padding(10.dp)) {
-                                        Text("Execution Output", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = ShivaCyan)
+                                        Text("Execution Output", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = ShivTheme.colors.primary)
                                         Spacer(modifier = Modifier.height(4.dp))
-                                        Text(taskResultText!!, style = MaterialTheme.typography.bodySmall, color = TextPrimary)
+                                        Text(taskResultText!!, style = MaterialTheme.typography.bodySmall, color = ShivTheme.colors.textPrimary)
 
                                         if (executedSteps.isNotEmpty()) {
                                             Spacer(modifier = Modifier.height(8.dp))
@@ -410,7 +422,7 @@ fun AgentsScreen(
                             }
                         }
                     },
-                    containerColor = CosmicSurface,
+                    containerColor = ShivTheme.colors.surface,
                     shape = RoundedCornerShape(20.dp)
                 )
             }
@@ -423,15 +435,15 @@ fun MetricCard(title: String, value: String, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
-        color = CosmicSurface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, CosmicCardBorder)
+        color = ShivTheme.colors.surface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, ShivTheme.colors.cardBorder)
     ) {
         Column(
             modifier = Modifier.padding(vertical = 10.dp, horizontal = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = value, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = ShivaCyan)
-            Text(text = title, style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+            Text(text = value, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = ShivTheme.colors.primary)
+            Text(text = title, style = MaterialTheme.typography.labelSmall, color = ShivTheme.colors.textSecondary)
         }
     }
 }
@@ -445,11 +457,11 @@ fun AgentCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(ShivTheme.cardRadius))
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(18.dp),
-        color = if (isSelected) ShivaIndigo.copy(alpha = 0.2f) else CosmicSurface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, if (isSelected) ShivaCyan else CosmicCardBorder)
+        shape = RoundedCornerShape(ShivTheme.cardRadius),
+        color = if (isSelected) ShivTheme.colors.primary.copy(alpha = 0.15f) else ShivTheme.colors.surface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, if (isSelected) ShivTheme.colors.primary else ShivTheme.colors.cardBorder)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -476,7 +488,7 @@ fun AgentCard(
                     Text(
                         text = agent.name,
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                        color = TextPrimary
+                        color = ShivTheme.colors.textPrimary
                     )
                     Text(
                         text = agent.role,
@@ -489,7 +501,7 @@ fun AgentCard(
                 Text(
                     text = agent.description,
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = ShivTheme.colors.textSecondary
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -497,12 +509,12 @@ fun AgentCard(
                     agent.capabilities.take(2).forEach { cap ->
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = CosmicSurfaceVariant
+                            color = ShivTheme.colors.surfaceVariant
                         ) {
                             Text(
                                 text = cap,
                                 style = MaterialTheme.typography.labelSmall,
-                                color = TextSecondary,
+                                color = ShivTheme.colors.textSecondary,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
                         }
@@ -530,13 +542,13 @@ fun BottomBarTab(
         Icon(
             imageVector = icon,
             contentDescription = label,
-            tint = if (isSelected) ShivaCyan else TextSecondary,
+            tint = if (isSelected) ShivTheme.colors.primary else ShivTheme.colors.textSecondary,
             modifier = Modifier.size(24.dp)
         )
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = if (isSelected) ShivaCyan else TextSecondary
+            color = if (isSelected) ShivTheme.colors.primary else ShivTheme.colors.textSecondary
         )
     }
 }

@@ -32,8 +32,8 @@ fun SidebarDrawer(
 ) {
     ModalDrawerSheet(
         modifier = Modifier.width(310.dp),
-        drawerContainerColor = CosmicSurface,
-        drawerContentColor = TextPrimary,
+        drawerContainerColor = ShivTheme.colors.surface,
+        drawerContentColor = ShivTheme.colors.textPrimary,
         drawerShape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp)
     ) {
         Column(
@@ -54,23 +54,23 @@ fun SidebarDrawer(
                     Text(
                         text = "ShivAI",
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                        color = TextPrimary
+                        color = ShivTheme.colors.textPrimary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Surface(
-                        color = ShivaIndigo.copy(alpha = 0.2f),
+                        color = ShivTheme.colors.primary.copy(alpha = 0.2f),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
-                            text = "v1.0",
+                            text = "v2.0",
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                             style = MaterialTheme.typography.labelSmall,
-                            color = ShivaCyan
+                            color = ShivTheme.colors.primary
                         )
                     }
                 }
                 IconButton(onClick = onClose) {
-                    Icon(Icons.Default.Close, contentDescription = "Close", tint = TextSecondary)
+                    Icon(Icons.Default.Close, contentDescription = "Close", tint = ShivTheme.colors.textSecondary)
                 }
             }
 
@@ -79,9 +79,9 @@ fun SidebarDrawer(
             // User Profile Card
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(18.dp),
-                color = CosmicSurfaceVariant,
-                border = androidx.compose.foundation.BorderStroke(1.dp, CosmicCardBorder)
+                shape = RoundedCornerShape(ShivTheme.cardRadius),
+                color = ShivTheme.colors.surfaceVariant,
+                border = androidx.compose.foundation.BorderStroke(1.dp, ShivTheme.colors.cardBorder)
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -93,7 +93,7 @@ fun SidebarDrawer(
                             .clip(CircleShape)
                             .background(
                                 Brush.linearGradient(
-                                    listOf(ShivaIndigo, ShivaPurple)
+                                    listOf(ShivTheme.colors.primary, ShivTheme.colors.accent)
                                 )
                             ),
                         contentAlignment = Alignment.Center
@@ -105,12 +105,12 @@ fun SidebarDrawer(
                         Text(
                             text = "Shivam Gupta",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                            color = TextPrimary
+                            color = ShivTheme.colors.textPrimary
                         )
                         Text(
                             text = "Creator • Builder • Dreamer",
                             style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary
+                            color = ShivTheme.colors.textSecondary
                         )
                     }
                 }
@@ -136,6 +136,12 @@ fun SidebarDrawer(
                 label = "SHIV Studio",
                 isSelected = currentRoute == "studio",
                 onClick = { onNavigate("studio"); onClose() }
+            )
+            DrawerNavItem(
+                icon = Icons.Default.Shield,
+                label = "Safety & Security",
+                isSelected = currentRoute == "safety_security",
+                onClick = { onNavigate("safety_security"); onClose() }
             )
             DrawerNavItem(
                 icon = Icons.Default.Lock,
@@ -198,7 +204,7 @@ fun SidebarDrawer(
             Text(
                 text = "Ecosystem",
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                color = TextTertiary,
+                color = ShivTheme.colors.textSecondary,
                 modifier = Modifier.padding(start = 12.dp, bottom = 8.dp)
             )
 
@@ -213,7 +219,7 @@ fun SidebarDrawer(
             Text(
                 text = "Built with passion in India 🇮🇳",
                 style = MaterialTheme.typography.bodySmall,
-                color = TextTertiary,
+                color = ShivTheme.colors.textSecondary,
                 modifier = Modifier.padding(start = 12.dp, bottom = 12.dp)
             )
         }
@@ -231,10 +237,10 @@ private fun DrawerNavItem(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 3.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(ShivTheme.cardRadius))
             .clickable(onClick = onClick),
-        color = if (isSelected) ShivaIndigo.copy(alpha = 0.2f) else Color.Transparent,
-        shape = RoundedCornerShape(14.dp)
+        color = if (isSelected) ShivTheme.colors.primary.copy(alpha = 0.2f) else Color.Transparent,
+        shape = RoundedCornerShape(ShivTheme.cardRadius)
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
@@ -243,7 +249,7 @@ private fun DrawerNavItem(
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                tint = if (isSelected) ShivaCyan else TextSecondary,
+                tint = if (isSelected) ShivTheme.colors.primary else ShivTheme.colors.textSecondary,
                 modifier = Modifier.size(20.dp)
             )
             Spacer(modifier = Modifier.width(14.dp))
@@ -252,7 +258,7 @@ private fun DrawerNavItem(
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
                 ),
-                color = if (isSelected) TextPrimary else TextSecondary
+                color = if (isSelected) ShivTheme.colors.textPrimary else ShivTheme.colors.textSecondary
             )
         }
     }
@@ -279,14 +285,14 @@ private fun EcosystemItem(
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                tint = TextTertiary,
+                tint = ShivTheme.colors.textSecondary,
                 modifier = Modifier.size(18.dp)
             )
             Spacer(modifier = Modifier.width(14.dp))
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary
+                color = ShivTheme.colors.textSecondary
             )
         }
     }

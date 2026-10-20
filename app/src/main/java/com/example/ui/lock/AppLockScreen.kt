@@ -58,7 +58,7 @@ fun AppLockScreen(
                     },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextPrimary)
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = ShivTheme.colors.textPrimary)
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -75,9 +75,9 @@ fun AppLockScreen(
                 // Security Status Card
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = CosmicSurfaceVariant.copy(alpha = 0.8f)),
-                    border = BorderStroke(1.dp, if (canAuth) ShivaCyan.copy(alpha = 0.4f) else MaterialTheme.colorScheme.error.copy(alpha = 0.4f))
+                    shape = RoundedCornerShape(ShivTheme.cardRadius),
+                    colors = CardDefaults.cardColors(containerColor = ShivTheme.colors.surfaceVariant.copy(alpha = 0.8f)),
+                    border = BorderStroke(1.dp, if (canAuth) ShivTheme.colors.primary.copy(alpha = 0.4f) else MaterialTheme.colorScheme.error.copy(alpha = 0.4f))
                 ) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
@@ -85,14 +85,14 @@ fun AppLockScreen(
                                 Icon(
                                     if (canAuth) Icons.Default.Fingerprint else Icons.Default.Warning,
                                     contentDescription = null,
-                                    tint = if (canAuth) ShivaCyan else MaterialTheme.colorScheme.error,
+                                    tint = if (canAuth) ShivTheme.colors.primary else MaterialTheme.colorScheme.error,
                                     modifier = Modifier.size(22.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Biometric & Device Auth", fontWeight = FontWeight.Bold, color = TextPrimary)
+                                Text("Biometric & Device Auth", fontWeight = FontWeight.Bold, color = ShivTheme.colors.textPrimary)
                             }
                             Surface(
-                                color = if (canAuth) ShivaCyan.copy(alpha = 0.15f) else MaterialTheme.colorScheme.error.copy(alpha = 0.15f),
+                                color = if (canAuth) ShivTheme.colors.primary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.error.copy(alpha = 0.15f),
                                 shape = RoundedCornerShape(8.dp)
                             ) {
                                 Text(
@@ -100,14 +100,14 @@ fun AppLockScreen(
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (canAuth) ShivaCyan else MaterialTheme.colorScheme.error
+                                    color = if (canAuth) ShivTheme.colors.primary else MaterialTheme.colorScheme.error
                                 )
                             }
                         }
                         Text(
                             "Locks selected applications with biometric fingerprint, face unlock, or device PIN fallback. Locked apps require authentication each time they are launched from SHIV Launcher.",
                             style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary
+                            color = ShivTheme.colors.textSecondary
                         )
                     }
                 }
@@ -116,40 +116,40 @@ fun AppLockScreen(
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
-                    color = CosmicSurface.copy(alpha = 0.85f),
-                    border = BorderStroke(1.dp, ShivaCyan.copy(alpha = 0.3f))
+                    color = ShivTheme.colors.surface.copy(alpha = 0.85f),
+                    border = BorderStroke(1.dp, ShivTheme.colors.primary.copy(alpha = 0.3f))
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.Search, contentDescription = null, tint = ShivaCyan, modifier = Modifier.size(20.dp))
+                        Icon(Icons.Default.Search, contentDescription = null, tint = ShivTheme.colors.primary, modifier = Modifier.size(20.dp))
                         Spacer(modifier = Modifier.width(10.dp))
                         TextField(
                             value = searchQuery,
                             onValueChange = { searchQuery = it },
-                            placeholder = { Text("Search installed apps...", color = TextSecondary) },
+                            placeholder = { Text("Search installed apps...", color = ShivTheme.colors.textSecondary) },
                             singleLine = true,
                             colors = TextFieldDefaults.colors(
                                 focusedContainerColor = Color.Transparent,
                                 unfocusedContainerColor = Color.Transparent,
                                 focusedIndicatorColor = Color.Transparent,
                                 unfocusedIndicatorColor = Color.Transparent,
-                                focusedTextColor = TextPrimary,
-                                unfocusedTextColor = TextPrimary
+                                focusedTextColor = ShivTheme.colors.textPrimary,
+                                unfocusedTextColor = ShivTheme.colors.textPrimary
                             ),
                             modifier = Modifier.weight(1f)
                         )
                         if (searchQuery.isNotEmpty()) {
                             IconButton(onClick = { searchQuery = "" }) {
-                                Icon(Icons.Default.Close, contentDescription = "Clear", tint = TextSecondary, modifier = Modifier.size(18.dp))
+                                Icon(Icons.Default.Close, contentDescription = "Clear", tint = ShivTheme.colors.textSecondary, modifier = Modifier.size(18.dp))
                             }
                         }
                     }
                 }
 
                 // Apps List
-                Text("Applications (${lockedPackages.size} locked)", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = TextSecondary)
+                Text("Applications (${lockedPackages.size} locked)", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = ShivTheme.colors.textSecondary)
 
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -161,9 +161,9 @@ fun AppLockScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(14.dp)),
-                            color = CosmicSurface.copy(alpha = 0.6f),
+                            color = ShivTheme.colors.surface.copy(alpha = 0.6f),
                             shape = RoundedCornerShape(14.dp),
-                            border = BorderStroke(1.dp, if (isLocked) ShivaCyan.copy(alpha = 0.5f) else CosmicCardBorder.copy(alpha = 0.3f))
+                            border = BorderStroke(1.dp, if (isLocked) ShivTheme.colors.primary.copy(alpha = 0.5f) else ShivTheme.colors.cardBorder.copy(alpha = 0.3f))
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
@@ -175,20 +175,20 @@ fun AppLockScreen(
                                         modifier = Modifier
                                             .size(38.dp)
                                             .clip(CircleShape)
-                                            .background(if (isLocked) ShivaCyan.copy(alpha = 0.2f) else CosmicSurfaceVariant),
+                                            .background(if (isLocked) ShivTheme.colors.primary.copy(alpha = 0.2f) else ShivTheme.colors.surfaceVariant),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
                                             if (isLocked) Icons.Default.Lock else Icons.Default.LockOpen,
                                             contentDescription = null,
-                                            tint = if (isLocked) ShivaCyan else TextSecondary,
+                                            tint = if (isLocked) ShivTheme.colors.primary else ShivTheme.colors.textSecondary,
                                             modifier = Modifier.size(18.dp)
                                         )
                                     }
                                     Spacer(modifier = Modifier.width(14.dp))
                                     Column {
-                                        Text(app.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = TextPrimary)
-                                        Text(app.packageName, style = MaterialTheme.typography.labelSmall, color = TextSecondary, maxLines = 1)
+                                        Text(app.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = ShivTheme.colors.textPrimary)
+                                        Text(app.packageName, style = MaterialTheme.typography.labelSmall, color = ShivTheme.colors.textSecondary, maxLines = 1)
                                     }
                                 }
                                 Switch(

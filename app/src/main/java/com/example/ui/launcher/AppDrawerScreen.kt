@@ -130,11 +130,11 @@ fun AppDrawerScreen(
                                 .size(40.dp)
                                 .clip(CircleShape)
                                 .clickable(onClick = onBack),
-                            color = CosmicSurfaceVariant.copy(alpha = 0.6f),
+                            color = ShivTheme.colors.surfaceVariant.copy(alpha = 0.6f),
                             shape = CircleShape
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextPrimary, modifier = Modifier.size(20.dp))
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = ShivTheme.colors.textPrimary, modifier = Modifier.size(20.dp))
                             }
                         }
                         Spacer(modifier = Modifier.width(12.dp))
@@ -143,7 +143,7 @@ fun AppDrawerScreen(
                         Text(
                             text = "All Apps (${filteredApps.size})",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = TextPrimary
+                            color = ShivTheme.colors.textPrimary
                         )
                     }
 
@@ -153,33 +153,33 @@ fun AppDrawerScreen(
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(24.dp),
-                        color = CosmicSurface.copy(alpha = 0.85f),
-                        border = BorderStroke(1.dp, ShivaCyan.copy(alpha = 0.35f))
+                        color = ShivTheme.colors.surface.copy(alpha = 0.85f),
+                        border = BorderStroke(1.dp, ShivTheme.colors.primary.copy(alpha = 0.35f))
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.Search, contentDescription = "Search", tint = ShivaCyan, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Default.Search, contentDescription = "Search", tint = ShivTheme.colors.primary, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(10.dp))
                             TextField(
                                 value = searchQuery,
                                 onValueChange = { searchQuery = it },
-                                placeholder = { Text("Filter applications on-device...", color = TextSecondary, fontSize = 14.sp) },
+                                placeholder = { Text("Filter applications on-device...", color = ShivTheme.colors.textSecondary, fontSize = 14.sp) },
                                 modifier = Modifier.weight(1f),
                                 colors = TextFieldDefaults.colors(
                                     focusedContainerColor = Color.Transparent,
                                     unfocusedContainerColor = Color.Transparent,
                                     focusedIndicatorColor = Color.Transparent,
                                     unfocusedIndicatorColor = Color.Transparent,
-                                    focusedTextColor = TextPrimary,
-                                    unfocusedTextColor = TextPrimary
+                                    focusedTextColor = ShivTheme.colors.textPrimary,
+                                    unfocusedTextColor = ShivTheme.colors.textPrimary
                                 ),
                                 singleLine = true
                             )
                             if (searchQuery.isNotEmpty()) {
                                 IconButton(onClick = { searchQuery = "" }, modifier = Modifier.size(24.dp)) {
-                                    Icon(Icons.Default.Close, contentDescription = "Clear", tint = TextSecondary)
+                                    Icon(Icons.Default.Close, contentDescription = "Clear", tint = ShivTheme.colors.textSecondary)
                                 }
                             }
                         }
@@ -201,8 +201,8 @@ fun AppDrawerScreen(
                                     .clip(RoundedCornerShape(14.dp))
                                     .clickable { selectedCategory = category },
                                 shape = RoundedCornerShape(14.dp),
-                                color = if (isSelected) ShivaCyan.copy(alpha = 0.2f) else CosmicSurfaceVariant.copy(alpha = 0.5f),
-                                border = BorderStroke(1.dp, if (isSelected) ShivaCyan else CosmicCardBorder.copy(alpha = 0.4f))
+                                color = if (isSelected) ShivTheme.colors.primary.copy(alpha = 0.2f) else ShivTheme.colors.surfaceVariant.copy(alpha = 0.5f),
+                                border = BorderStroke(1.dp, if (isSelected) ShivTheme.colors.primary else ShivTheme.colors.cardBorder.copy(alpha = 0.4f))
                             ) {
                                 Text(
                                     text = category,
@@ -210,7 +210,7 @@ fun AppDrawerScreen(
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                                     ),
-                                    color = if (isSelected) ShivaCyan else TextSecondary
+                                    color = if (isSelected) ShivTheme.colors.primary else ShivTheme.colors.textSecondary
                                 )
                             }
                         }
@@ -230,11 +230,11 @@ fun AppDrawerScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 12.dp)
-                            .clip(RoundedCornerShape(16.dp))
+                            .clip(RoundedCornerShape(ShivTheme.cardRadius))
                             .clickable { onNavigate("chat") },
-                        color = ShivaIndigo.copy(alpha = 0.25f),
-                        border = BorderStroke(1.dp, ShivaCyan.copy(alpha = 0.4f)),
-                        shape = RoundedCornerShape(16.dp)
+                        color = ShivTheme.colors.primary.copy(alpha = 0.25f),
+                        border = BorderStroke(1.dp, ShivTheme.colors.primary.copy(alpha = 0.4f)),
+                        shape = RoundedCornerShape(ShivTheme.cardRadius)
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
@@ -246,15 +246,15 @@ fun AppDrawerScreen(
                                 Text(
                                     text = "Ask ShivAI about \"$searchQuery\"",
                                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = TextPrimary
+                                    color = ShivTheme.colors.textPrimary
                                 )
                                 Text(
                                     text = "Cognitive reasoning, web research & smart actions",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = TextSecondary
+                                    color = ShivTheme.colors.textSecondary
                                 )
                             }
-                            Icon(Icons.Default.ArrowForward, contentDescription = null, tint = ShivaCyan, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.ArrowForward, contentDescription = null, tint = ShivTheme.colors.primary, modifier = Modifier.size(18.dp))
                         }
                     }
                 }
@@ -284,7 +284,7 @@ fun AppDrawerScreen(
             val app = selectedAppForOptions!!
             ModalBottomSheet(
                 onDismissRequest = { selectedAppForOptions = null },
-                containerColor = CosmicSurface,
+                containerColor = ShivTheme.colors.surface,
                 shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
             ) {
                 Column(
@@ -296,15 +296,15 @@ fun AppDrawerScreen(
                     Text(
                         text = app.name,
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = TextPrimary
+                        color = ShivTheme.colors.textPrimary
                     )
                     Text(
                         text = app.packageName,
                         style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary
+                        color = ShivTheme.colors.textSecondary
                     )
 
-                    Divider(color = CosmicCardBorder.copy(alpha = 0.5f))
+                    HorizontalDivider(color = ShivTheme.colors.cardBorder.copy(alpha = 0.5f))
 
                     // Open App
                     Surface(
@@ -315,12 +315,12 @@ fun AppDrawerScreen(
                                 selectedAppForOptions = null
                                 viewModel.onAppClicked(app.packageName)
                             },
-                        color = CosmicSurfaceVariant.copy(alpha = 0.6f)
+                        color = ShivTheme.colors.surfaceVariant.copy(alpha = 0.6f)
                     ) {
                         Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Launch, contentDescription = null, tint = ShivaCyan)
+                            Icon(Icons.Default.Launch, contentDescription = null, tint = ShivTheme.colors.primary)
                             Spacer(modifier = Modifier.width(12.dp))
-                            Text("Open Application", color = TextPrimary, fontWeight = FontWeight.Medium)
+                            Text("Open Application", color = ShivTheme.colors.textPrimary, fontWeight = FontWeight.Medium)
                         }
                     }
 
@@ -336,12 +336,12 @@ fun AppDrawerScreen(
                                 }
                                 context.startActivity(intent)
                             },
-                        color = CosmicSurfaceVariant.copy(alpha = 0.6f)
+                        color = ShivTheme.colors.surfaceVariant.copy(alpha = 0.6f)
                     ) {
                         Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Info, contentDescription = null, tint = ShivaIndigo)
+                            Icon(Icons.Default.Info, contentDescription = null, tint = ShivTheme.colors.accent)
                             Spacer(modifier = Modifier.width(12.dp))
-                            Text("App Details & Permissions", color = TextPrimary, fontWeight = FontWeight.Medium)
+                            Text("App Details & Permissions", color = ShivTheme.colors.textPrimary, fontWeight = FontWeight.Medium)
                         }
                     }
 
@@ -360,13 +360,13 @@ fun AppDrawerScreen(
                                     Toast.LENGTH_SHORT
                                 ).show()
                             },
-                        color = CosmicSurfaceVariant.copy(alpha = 0.6f)
+                        color = ShivTheme.colors.surfaceVariant.copy(alpha = 0.6f)
                     ) {
                         Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Lock, contentDescription = null, tint = ShivaAmber)
                             Spacer(modifier = Modifier.width(12.dp))
                             val isCurrentlyLocked = viewModel.appLockManager?.isAppLocked(app.packageName) == true
-                            Text(if (isCurrentlyLocked) "Remove SHIV Lock" else "Protect with SHIV Lock", color = TextPrimary, fontWeight = FontWeight.Medium)
+                            Text(if (isCurrentlyLocked) "Remove SHIV Lock" else "Protect with SHIV Lock", color = ShivTheme.colors.textPrimary, fontWeight = FontWeight.Medium)
                         }
                     }
 
@@ -382,7 +382,7 @@ fun AppDrawerScreen(
                                 }
                                 context.startActivity(intent)
                             },
-                        color = CosmicSurfaceVariant.copy(alpha = 0.6f)
+                        color = ShivTheme.colors.surfaceVariant.copy(alpha = 0.6f)
                     ) {
                         Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Delete, contentDescription = null, tint = ShivaRed)
@@ -455,7 +455,7 @@ fun AppGridItem(
             modifier = Modifier
                 .size(scaledSize)
                 .clip(shapeCorner)
-                .background(CosmicSurfaceVariant.copy(alpha = 0.6f))
+                .background(ShivTheme.colors.surfaceVariant.copy(alpha = 0.6f))
                 .padding(2.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -501,7 +501,7 @@ fun AppGridItem(
         Text(
             text = app.name,
             style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, fontWeight = FontWeight.Medium),
-            color = TextPrimary,
+            color = ShivTheme.colors.textPrimary,
             textAlign = TextAlign.Center,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis

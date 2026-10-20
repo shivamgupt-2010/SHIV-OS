@@ -60,7 +60,7 @@ fun FamilyScreen(
                     },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextPrimary)
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = ShivTheme.colors.textPrimary)
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -78,15 +78,15 @@ fun FamilyScreen(
                 // Status Header
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = CosmicSurfaceVariant.copy(alpha = 0.8f)),
-                    border = BorderStroke(1.dp, if (policy.isSupervised) ShivaCyan else CosmicCardBorder)
+                    shape = RoundedCornerShape(ShivTheme.cardRadius),
+                    colors = CardDefaults.cardColors(containerColor = ShivTheme.colors.surfaceVariant.copy(alpha = 0.8f)),
+                    border = BorderStroke(1.dp, if (policy.isSupervised) ShivTheme.colors.primary else ShivTheme.colors.cardBorder)
                 ) {
                     Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                            Text("Device Supervision Status", fontWeight = FontWeight.Bold, color = TextPrimary)
+                            Text("Device Supervision Status", fontWeight = FontWeight.Bold, color = ShivTheme.colors.textPrimary)
                             Surface(
-                                color = if (policy.isSupervised) ShivaCyan.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant,
+                                color = if (policy.isSupervised) ShivTheme.colors.primary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant,
                                 shape = RoundedCornerShape(8.dp)
                             ) {
                                 Text(
@@ -94,14 +94,14 @@ fun FamilyScreen(
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (policy.isSupervised) ShivaCyan else TextSecondary
+                                    color = if (policy.isSupervised) ShivTheme.colors.primary else ShivTheme.colors.textSecondary
                                 )
                             }
                         }
                         Text(
                             "When supervised mode is enabled, only approved applications and study tools are accessible. Entertainment apps are blocked during scheduled bedtime curfews.",
                             style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary
+                            color = ShivTheme.colors.textSecondary
                         )
                     }
                 }
@@ -119,7 +119,7 @@ fun FamilyScreen(
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text("Bedtime Curfew Active", fontWeight = FontWeight.Bold, color = ShivaOrange)
-                                Text("Non-essential apps are currently locked for rest time.", style = MaterialTheme.typography.bodySmall, color = TextPrimary)
+                                Text("Non-essential apps are currently locked for rest time.", style = MaterialTheme.typography.bodySmall, color = ShivTheme.colors.textPrimary)
                             }
                         }
                     }
@@ -129,8 +129,8 @@ fun FamilyScreen(
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    color = CosmicSurface.copy(alpha = 0.6f),
-                    border = BorderStroke(1.dp, CosmicCardBorder.copy(alpha = 0.4f))
+                    color = ShivTheme.colors.surface.copy(alpha = 0.6f),
+                    border = BorderStroke(1.dp, ShivTheme.colors.cardBorder.copy(alpha = 0.4f))
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
@@ -138,8 +138,8 @@ fun FamilyScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Enable Child Supervision Mode", fontWeight = FontWeight.SemiBold, color = TextPrimary)
-                            Text("Enforces allowlist and curfew restrictions", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                            Text("Enable Child Supervision Mode", fontWeight = FontWeight.SemiBold, color = ShivTheme.colors.textPrimary)
+                            Text("Enforces allowlist and curfew restrictions", style = MaterialTheme.typography.bodySmall, color = ShivTheme.colors.textSecondary)
                         }
                         Switch(
                             checked = policy.isSupervised,
@@ -158,27 +158,27 @@ fun FamilyScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = CosmicSurfaceVariant.copy(alpha = 0.6f))
+                    colors = CardDefaults.cardColors(containerColor = ShivTheme.colors.surfaceVariant.copy(alpha = 0.6f))
                 ) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Schedule, contentDescription = null, tint = ShivaCyan)
+                                Icon(Icons.Default.Schedule, contentDescription = null, tint = ShivTheme.colors.primary)
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Bedtime Curfew", fontWeight = FontWeight.SemiBold, color = TextPrimary)
+                                Text("Bedtime Curfew", fontWeight = FontWeight.SemiBold, color = ShivTheme.colors.textPrimary)
                             }
                             Switch(
                                 checked = policy.curfewEnabled,
                                 onCheckedChange = { familyManager.updateCurfew(it, 21, 0, 7, 0) }
                             )
                         }
-                        Text("Active daily: 9:00 PM – 7:00 AM (Emergency phone calls always permitted)", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                        Text("Active daily: 9:00 PM – 7:00 AM (Emergency phone calls always permitted)", style = MaterialTheme.typography.bodySmall, color = ShivTheme.colors.textSecondary)
                     }
                 }
 
                 // Temporary Extension Actions
                 if (policy.isSupervised) {
-                    Text("Temporary Parental Extensions", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+                    Text("Temporary Parental Extensions", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = ShivTheme.colors.textPrimary)
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Button(
                             onClick = {

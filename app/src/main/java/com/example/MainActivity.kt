@@ -21,8 +21,9 @@ class MainActivity : ComponentActivity() {
     try {
       enableEdgeToEdge()
       setContent {
-        MyApplicationTheme {
-          val appContainer = (application as ShivAiApplication).container
+        val appContainer = (application as ShivAiApplication).container
+        val currentTheme by appContainer.studioThemeEngine.currentTheme.collectAsState()
+        MyApplicationTheme(theme = currentTheme) {
           MainNavGraph(appContainer = appContainer)
         }
       }

@@ -67,7 +67,7 @@ fun WellbeingScreen(
                     },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextPrimary)
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = ShivTheme.colors.textPrimary)
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -86,17 +86,17 @@ fun WellbeingScreen(
                 if (!hasPermission) {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(18.dp),
-                        colors = CardDefaults.cardColors(containerColor = CosmicSurfaceVariant),
+                        shape = RoundedCornerShape(ShivTheme.cardRadius),
+                        colors = CardDefaults.cardColors(containerColor = ShivTheme.colors.surfaceVariant),
                         border = BorderStroke(1.dp, ShivaOrange.copy(alpha = 0.5f))
                     ) {
                         Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Default.Info, contentDescription = null, tint = ShivaOrange)
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Usage Access Required", fontWeight = FontWeight.Bold, color = TextPrimary)
+                                Text("Usage Access Required", fontWeight = FontWeight.Bold, color = ShivTheme.colors.textPrimary)
                             }
-                            Text("To display real daily screen-time metrics and app budgets locally on your device, please grant Usage Access in Android Settings.", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                            Text("To display real daily screen-time metrics and app budgets locally on your device, please grant Usage Access in Android Settings.", style = MaterialTheme.typography.bodySmall, color = ShivTheme.colors.textSecondary)
                             Button(
                                 onClick = {
                                     val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
@@ -117,43 +117,43 @@ fun WellbeingScreen(
                 val mins = totalMinutes % 60
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(22.dp),
-                    colors = CardDefaults.cardColors(containerColor = CosmicSurfaceVariant.copy(alpha = 0.8f)),
-                    border = BorderStroke(1.dp, ShivaCyan.copy(alpha = 0.4f))
+                    shape = RoundedCornerShape(ShivTheme.cardRadius),
+                    colors = CardDefaults.cardColors(containerColor = ShivTheme.colors.surfaceVariant.copy(alpha = 0.8f)),
+                    border = BorderStroke(1.dp, ShivTheme.colors.primary.copy(alpha = 0.4f))
                 ) {
                     Column(
                         modifier = Modifier.padding(22.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("SCREEN TIME TODAY", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = ShivaCyan, letterSpacing = 1.5.sp)
+                        Text("SCREEN TIME TODAY", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = ShivTheme.colors.primary, letterSpacing = 1.5.sp)
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
                             text = "${hours}h ${mins}m",
                             style = MaterialTheme.typography.displayMedium,
                             fontWeight = FontWeight.Light,
-                            color = TextPrimary
+                            color = ShivTheme.colors.textPrimary
                         )
                         Spacer(modifier = Modifier.height(6.dp))
-                        Text("Usage data processed 100% locally on-device", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                        Text("Usage data processed 100% locally on-device", style = MaterialTheme.typography.labelSmall, color = ShivTheme.colors.textSecondary)
                     }
                 }
 
                 // Focus Session Card
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = CosmicSurface.copy(alpha = 0.85f)),
-                    border = BorderStroke(1.dp, if (focusSession.isActive) ShivaCyan else CosmicCardBorder)
+                    shape = RoundedCornerShape(ShivTheme.cardRadius),
+                    colors = CardDefaults.cardColors(containerColor = ShivTheme.colors.surface.copy(alpha = 0.85f)),
+                    border = BorderStroke(1.dp, if (focusSession.isActive) ShivTheme.colors.primary else ShivTheme.colors.cardBorder)
                 ) {
                     Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.HourglassTop, contentDescription = null, tint = ShivaCyan)
+                                Icon(Icons.Default.HourglassTop, contentDescription = null, tint = ShivTheme.colors.primary)
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text(focusSession.title, fontWeight = FontWeight.Bold, color = TextPrimary)
+                                Text(focusSession.title, fontWeight = FontWeight.Bold, color = ShivTheme.colors.textPrimary)
                             }
                             Surface(
-                                color = if (focusSession.isActive) ShivaCyan.copy(alpha = 0.2f) else CosmicSurfaceVariant,
+                                color = if (focusSession.isActive) ShivTheme.colors.primary.copy(alpha = 0.2f) else ShivTheme.colors.surfaceVariant,
                                 shape = RoundedCornerShape(8.dp)
                             ) {
                                 Text(
@@ -161,7 +161,7 @@ fun WellbeingScreen(
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (focusSession.isActive) ShivaCyan else TextSecondary
+                                    color = if (focusSession.isActive) ShivTheme.colors.primary else ShivTheme.colors.textSecondary
                                 )
                             }
                         }
@@ -169,7 +169,7 @@ fun WellbeingScreen(
                         Text(
                             text = if (focusSession.isActive) "Focus active: notifications muted, distraction apps held back." else "Start a focused deep work or study session with zero distractions.",
                             style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary
+                            color = ShivTheme.colors.textSecondary
                         )
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -200,10 +200,10 @@ fun WellbeingScreen(
                 }
 
                 // Top Apps Usage List
-                Text("App Usage Breakdown", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+                Text("App Usage Breakdown", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = ShivTheme.colors.textPrimary)
 
                 if (todayStats.isEmpty()) {
-                    Text("No usage recorded yet today.", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+                    Text("No usage recorded yet today.", style = MaterialTheme.typography.bodyMedium, color = ShivTheme.colors.textSecondary)
                 } else {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         todayStats.forEach { stat ->
@@ -215,19 +215,19 @@ fun WellbeingScreen(
                             Surface(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(14.dp),
-                                color = CosmicSurface.copy(alpha = 0.6f),
-                                border = BorderStroke(1.dp, CosmicCardBorder.copy(alpha = 0.3f))
+                                color = ShivTheme.colors.surface.copy(alpha = 0.6f),
+                                border = BorderStroke(1.dp, ShivTheme.colors.cardBorder.copy(alpha = 0.3f))
                             ) {
                                 Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                        Text(appName, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = TextPrimary)
-                                        Text(if (appHours > 0) "${appHours}h ${appMins}m" else "${appMins}m", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = ShivaCyan)
+                                        Text(appName, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = ShivTheme.colors.textPrimary)
+                                        Text(if (appHours > 0) "${appHours}h ${appMins}m" else "${appMins}m", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = ShivTheme.colors.primary)
                                     }
                                     LinearProgressIndicator(
                                         progress = { pct },
                                         modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
-                                        color = ShivaCyan,
-                                        trackColor = CosmicSurfaceVariant
+                                        color = ShivTheme.colors.primary,
+                                        trackColor = ShivTheme.colors.surfaceVariant
                                     )
                                 }
                             }

@@ -84,8 +84,8 @@ fun ChatScreen(
             topBar = {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    color = CosmicSurface.copy(alpha = 0.95f),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, CosmicCardBorder.copy(alpha = 0.5f))
+                    color = ShivTheme.colors.surface.copy(alpha = 0.95f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, ShivTheme.colors.cardBorder.copy(alpha = 0.5f))
                 ) {
                     Column {
                         Row(
@@ -98,7 +98,7 @@ fun ChatScreen(
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 IconButton(onClick = onBack) {
-                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextPrimary)
+                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = ShivTheme.colors.textPrimary)
                                 }
                                 TrishulIcon(size = 22.dp)
                                 Spacer(modifier = Modifier.width(8.dp))
@@ -108,8 +108,8 @@ fun ChatScreen(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(12.dp))
                                         .clickable { showAgentSelector = true },
-                                    color = CosmicSurfaceVariant,
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, ShivaCyan.copy(alpha = 0.4f))
+                                    color = ShivTheme.colors.surfaceVariant,
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, ShivTheme.colors.primary.copy(alpha = 0.4f))
                                 ) {
                                     Row(
                                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
@@ -118,21 +118,21 @@ fun ChatScreen(
                                         Text(
                                             text = availableAgents.firstOrNull { it.first == activeAgent }?.second?.substringBefore(' ') ?: "ShivAI",
                                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                            color = ShivaCyan
+                                            color = ShivTheme.colors.primary
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Icon(Icons.Default.ArrowDropDown, contentDescription = "Select Agent", tint = ShivaCyan, modifier = Modifier.size(16.dp))
+                                        Icon(Icons.Default.ArrowDropDown, contentDescription = "Select Agent", tint = ShivTheme.colors.primary, modifier = Modifier.size(16.dp))
                                     }
                                 }
                             }
 
                             Row {
                                 IconButton(onClick = { viewModel.createNewSession() }) {
-                                    Icon(Icons.Default.AddComment, contentDescription = "New Chat", tint = TextSecondary)
+                                    Icon(Icons.Default.AddComment, contentDescription = "New Chat", tint = ShivTheme.colors.textSecondary)
                                 }
                                 Box {
                                     IconButton(onClick = { showMenu = true }) {
-                                        Icon(Icons.Default.MoreVert, contentDescription = "Menu", tint = TextSecondary)
+                                        Icon(Icons.Default.MoreVert, contentDescription = "Menu", tint = ShivTheme.colors.textSecondary)
                                     }
                                     DropdownMenu(
                                         expanded = showMenu,
@@ -182,8 +182,8 @@ fun ChatScreen(
             },
             bottomBar = {
                 Surface(
-                    color = CosmicSurface,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, CosmicCardBorder),
+                    color = ShivTheme.colors.surface,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, ShivTheme.colors.cardBorder),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
@@ -195,8 +195,8 @@ fun ChatScreen(
                         if (pendingAttachment != null) {
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
-                                color = CosmicSurfaceVariant,
-                                border = androidx.compose.foundation.BorderStroke(1.dp, ShivaCyan.copy(alpha = 0.5f)),
+                                color = ShivTheme.colors.surfaceVariant,
+                                border = androidx.compose.foundation.BorderStroke(1.dp, ShivTheme.colors.primary.copy(alpha = 0.5f)),
                                 modifier = Modifier
                                     .padding(bottom = 6.dp)
                                     .fillMaxWidth()
@@ -207,12 +207,12 @@ fun ChatScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(Icons.Default.AttachFile, contentDescription = null, tint = ShivaCyan, modifier = Modifier.size(16.dp))
+                                        Icon(Icons.Default.AttachFile, contentDescription = null, tint = ShivTheme.colors.primary, modifier = Modifier.size(16.dp))
                                         Spacer(modifier = Modifier.width(6.dp))
                                         Text(
                                             text = pendingAttachment!!.name,
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = TextPrimary,
+                                            color = ShivTheme.colors.textPrimary,
                                             maxLines = 1
                                         )
                                     }
@@ -220,7 +220,7 @@ fun ChatScreen(
                                         onClick = { viewModel.clearAttachment() },
                                         modifier = Modifier.size(24.dp)
                                     ) {
-                                        Icon(Icons.Default.Close, contentDescription = "Remove", tint = TextSecondary, modifier = Modifier.size(16.dp))
+                                        Icon(Icons.Default.Close, contentDescription = "Remove", tint = ShivTheme.colors.textSecondary, modifier = Modifier.size(16.dp))
                                     }
                                 }
                             }
@@ -230,20 +230,20 @@ fun ChatScreen(
                         if (pendingAction != null) {
                             Surface(
                                 shape = RoundedCornerShape(14.dp),
-                                color = ShivaIndigo.copy(alpha = 0.25f),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, ShivaCyan),
+                                color = ShivTheme.colors.primary.copy(alpha = 0.25f),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, ShivTheme.colors.primary),
                                 modifier = Modifier
                                     .padding(bottom = 6.dp)
                                     .fillMaxWidth()
                             ) {
                                 Column(modifier = Modifier.padding(12.dp)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = ShivaCyan, modifier = Modifier.size(18.dp))
+                                        Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = ShivTheme.colors.primary, modifier = Modifier.size(18.dp))
                                         Spacer(modifier = Modifier.width(6.dp))
                                         Text(
                                             text = "ShivAI Action Proposed",
                                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                            color = ShivaCyan
+                                            color = ShivTheme.colors.primary
                                         )
                                     }
                                     Spacer(modifier = Modifier.height(4.dp))
@@ -255,19 +255,19 @@ fun ChatScreen(
                                             else -> "Execute proposed launcher configuration?"
                                         },
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = TextPrimary
+                                        color = ShivTheme.colors.textPrimary
                                     )
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
                                         TextButton(onClick = { viewModel.dismissAction() }) {
-                                            Text("Dismiss", color = TextSecondary)
+                                            Text("Dismiss", color = ShivTheme.colors.textSecondary)
                                         }
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Button(
                                             onClick = { viewModel.confirmAction(pendingAction!!) },
-                                            colors = ButtonDefaults.buttonColors(containerColor = ShivaCyan)
+                                            colors = ButtonDefaults.buttonColors(containerColor = ShivTheme.colors.primary)
                                         ) {
-                                            Text("Apply Action", color = Color.Black, fontWeight = FontWeight.Bold)
+                                            Text("Apply Action", color = if (ShivTheme.isDark) Color.Black else Color.White, fontWeight = FontWeight.Bold)
                                         }
                                     }
                                 }
@@ -287,7 +287,7 @@ fun ChatScreen(
                                 Icon(
                                     Icons.Default.AttachFile,
                                     contentDescription = "Attach File",
-                                    tint = ShivaCyan,
+                                    tint = ShivTheme.colors.primary,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -296,14 +296,14 @@ fun ChatScreen(
                                 value = inputText,
                                 onValueChange = { inputText = it },
                                 modifier = Modifier.weight(1f),
-                                placeholder = { Text("Ask ShivAI or enter a task...", color = TextSecondary, fontSize = 14.sp) },
+                                placeholder = { Text("Ask ShivAI or enter a task...", color = ShivTheme.colors.textSecondary, fontSize = 14.sp) },
                                 colors = TextFieldDefaults.colors(
                                     focusedContainerColor = Color.Transparent,
                                     unfocusedContainerColor = Color.Transparent,
                                     focusedIndicatorColor = Color.Transparent,
                                     unfocusedIndicatorColor = Color.Transparent,
-                                    focusedTextColor = TextPrimary,
-                                    unfocusedTextColor = TextPrimary
+                                    focusedTextColor = ShivTheme.colors.textPrimary,
+                                    unfocusedTextColor = ShivTheme.colors.textPrimary
                                 ),
                                 maxLines = 4
                             )
@@ -320,12 +320,12 @@ fun ChatScreen(
                                     modifier = Modifier
                                         .size(40.dp)
                                         .clip(CircleShape)
-                                        .background(ShivaIndigo)
+                                        .background(ShivTheme.colors.primary)
                                 ) {
                                     Icon(
                                         imageVector = Icons.AutoMirrored.Filled.Send,
                                         contentDescription = "Send",
-                                        tint = Color.White,
+                                        tint = if (ShivTheme.isDark) Color.Black else Color.White,
                                         modifier = Modifier.size(18.dp)
                                     )
                                 }
@@ -336,7 +336,7 @@ fun ChatScreen(
                                         .size(40.dp)
                                         .clip(CircleShape)
                                         .background(
-                                            if (voiceState != VoiceSessionState.IDLE) ShivaRed else ShivaIndigo.copy(alpha = 0.2f)
+                                            if (voiceState != VoiceSessionState.IDLE) ShivaRed else ShivTheme.colors.primary.copy(alpha = 0.2f)
                                         )
                                 ) {
                                     if (voiceState == VoiceSessionState.LISTENING || voiceState == VoiceSessionState.THINKING) {
@@ -345,7 +345,7 @@ fun ChatScreen(
                                         Icon(
                                             imageVector = Icons.Default.Mic,
                                             contentDescription = "Voice",
-                                            tint = if (voiceState != VoiceSessionState.IDLE) Color.White else ShivaCyan,
+                                            tint = if (voiceState != VoiceSessionState.IDLE) Color.White else ShivTheme.colors.primary,
                                             modifier = Modifier.size(20.dp)
                                         )
                                     }
@@ -368,9 +368,9 @@ fun ChatScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(22.dp),
-                            color = CosmicSurfaceVariant,
-                            border = androidx.compose.foundation.BorderStroke(1.dp, CosmicCardBorder)
+                            shape = RoundedCornerShape(ShivTheme.cardRadius),
+                            color = ShivTheme.colors.surfaceVariant,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, ShivTheme.colors.cardBorder)
                         ) {
                             Column(
                                 modifier = Modifier.padding(20.dp),
@@ -381,13 +381,13 @@ fun ChatScreen(
                                 Text(
                                     text = "ShivAI Cognitive Core",
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = TextPrimary
+                                    color = ShivTheme.colors.textPrimary
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     text = "Powered by Multi-Agent Workforce & Knowledge Graph.\nAsk questions, dispatch workflows, or manage launcher actions.",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = TextSecondary,
+                                    color = ShivTheme.colors.textSecondary,
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                 )
                             }
@@ -469,8 +469,8 @@ fun RichMessageBubble(
                 bottomStart = if (isUser) 16.dp else 4.dp,
                 bottomEnd = if (isUser) 4.dp else 16.dp
             ),
-            color = if (isUser) ShivaIndigo else CosmicSurface,
-            border = if (!isUser) androidx.compose.foundation.BorderStroke(1.dp, if (message.isError) ShivaRed.copy(alpha = 0.5f) else CosmicCardBorder) else null,
+            color = if (isUser) ShivTheme.colors.primary else ShivTheme.colors.surface,
+            border = if (!isUser) androidx.compose.foundation.BorderStroke(1.dp, if (message.isError) ShivaRed.copy(alpha = 0.5f) else ShivTheme.colors.cardBorder) else null,
             modifier = Modifier.widthIn(max = 310.dp)
         ) {
             Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
@@ -487,12 +487,12 @@ fun RichMessageBubble(
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.AttachFile, contentDescription = null, tint = ShivaCyan, modifier = Modifier.size(14.dp))
+                            Icon(Icons.Default.AttachFile, contentDescription = null, tint = ShivTheme.colors.primary, modifier = Modifier.size(14.dp))
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = message.attachment.name,
                                 style = MaterialTheme.typography.labelSmall,
-                                color = ShivaCyan
+                                color = ShivTheme.colors.primary
                             )
                         }
                     }
@@ -505,7 +505,7 @@ fun RichMessageBubble(
                     Text(
                         text = message.content,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = if (isUser) Color.White else TextPrimary
+                        color = if (isUser) (if (ShivTheme.isDark) Color.Black else Color.White) else ShivTheme.colors.textPrimary
                     )
                 }
 
@@ -611,13 +611,13 @@ fun PromptChip(
         onClick = onClick,
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
-        color = CosmicSurfaceVariant.copy(alpha = 0.7f),
-        border = androidx.compose.foundation.BorderStroke(1.dp, CosmicCardBorder)
+        color = ShivTheme.colors.surfaceVariant.copy(alpha = 0.7f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, ShivTheme.colors.cardBorder)
     ) {
         Text(
             text = text,
             style = MaterialTheme.typography.bodySmall,
-            color = TextSecondary,
+            color = ShivTheme.colors.textSecondary,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
             maxLines = 1,
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis

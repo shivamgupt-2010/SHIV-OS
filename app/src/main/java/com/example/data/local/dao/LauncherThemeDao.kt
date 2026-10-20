@@ -17,4 +17,10 @@ interface LauncherThemeDao {
 
     @Query("UPDATE launcher_themes SET isLayoutLocked = :locked WHERE id = 'current_theme'")
     suspend fun setLayoutLocked(locked: Boolean)
+
+    @Query("SELECT * FROM launcher_themes WHERE id != 'current_theme' ORDER BY updatedAt DESC")
+    fun getCustomThemesFlow(): Flow<List<LauncherThemeEntity>>
+
+    @Query("DELETE FROM launcher_themes WHERE id = :id")
+    suspend fun deleteTheme(id: String)
 }

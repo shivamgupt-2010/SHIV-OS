@@ -172,20 +172,20 @@ fun ShivOSLiteLauncherScreen(
                         modifier = Modifier
                             .clip(CircleShape)
                             .clickable(onClick = onOpenSidebar),
-                        color = CosmicSurfaceVariant.copy(alpha = 0.7f),
+                        color = ShivTheme.colors.surfaceVariant.copy(alpha = 0.7f),
                         shape = CircleShape,
-                        border = BorderStroke(1.dp, CosmicCardBorder.copy(alpha = 0.5f))
+                        border = BorderStroke(1.dp, ShivTheme.colors.cardBorder.copy(alpha = 0.5f))
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = TextPrimary, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = ShivTheme.colors.textPrimary, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = "ShivOS",
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = ShivaCyan
+                                color = ShivTheme.colors.primary
                             )
                         }
                     }
@@ -203,9 +203,9 @@ fun ShivOSLiteLauncherScreen(
                                 viewModel.setComplexityMode(nextMode)
                                 Toast.makeText(context, "Switched to ${nextMode.title}", Toast.LENGTH_SHORT).show()
                             },
-                        color = CosmicSurface.copy(alpha = 0.85f),
+                        color = ShivTheme.colors.surface.copy(alpha = 0.85f),
                         shape = RoundedCornerShape(20.dp),
-                        border = BorderStroke(1.dp, ShivaCyan.copy(alpha = 0.4f))
+                        border = BorderStroke(1.dp, ShivTheme.colors.primary.copy(alpha = 0.4f))
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
@@ -219,7 +219,7 @@ fun ShivOSLiteLauncherScreen(
                                     fontWeight = FontWeight.ExtraBold,
                                     letterSpacing = 1.sp
                                 ),
-                                color = ShivaCyan
+                                color = ShivTheme.colors.primary
                             )
                         }
                     }
@@ -229,15 +229,15 @@ fun ShivOSLiteLauncherScreen(
                         modifier = Modifier
                             .clip(CircleShape)
                             .clickable { onNavigate("studio") },
-                        color = CosmicSurfaceVariant.copy(alpha = 0.7f),
+                        color = ShivTheme.colors.surfaceVariant.copy(alpha = 0.7f),
                         shape = CircleShape,
-                        border = BorderStroke(1.dp, CosmicCardBorder.copy(alpha = 0.5f))
+                        border = BorderStroke(1.dp, ShivTheme.colors.cardBorder.copy(alpha = 0.5f))
                     ) {
                         Box(
                             modifier = Modifier.padding(10.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.Palette, contentDescription = "SHIV Studio", tint = ShivaCyan, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Default.Palette, contentDescription = "SHIV Studio", tint = ShivTheme.colors.primary, modifier = Modifier.size(20.dp))
                         }
                     }
                 }
@@ -265,7 +265,7 @@ fun ShivOSLiteLauncherScreen(
                             fontWeight = FontWeight.Light,
                             letterSpacing = (-2).sp
                         ),
-                        color = TextPrimary
+                        color = ShivTheme.colors.textPrimary
                     )
                     Text(
                         text = if (currentDate.isNotEmpty()) currentDate else "Monday, September 14",
@@ -274,7 +274,7 @@ fun ShivOSLiteLauncherScreen(
                             fontSize = 15.sp,
                             letterSpacing = 0.5.sp
                         ),
-                        color = ShivaCyan.copy(alpha = 0.9f)
+                        color = ShivTheme.colors.primary.copy(alpha = 0.9f)
                     )
                 }
 
@@ -284,11 +284,11 @@ fun ShivOSLiteLauncherScreen(
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(28.dp))
+                        .clip(RoundedCornerShape(ShivTheme.cardRadius))
                         .clickable { onNavigate("all_apps") },
-                    shape = RoundedCornerShape(28.dp),
-                    color = CosmicSurface.copy(alpha = 0.85f),
-                    border = BorderStroke(1.dp, ShivaCyan.copy(alpha = 0.35f))
+                    shape = RoundedCornerShape(ShivTheme.cardRadius),
+                    color = ShivTheme.colors.surface.copy(alpha = 0.85f),
+                    border = BorderStroke(1.dp, ShivTheme.colors.primary.copy(alpha = 0.35f))
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
@@ -297,27 +297,27 @@ fun ShivOSLiteLauncherScreen(
                         Icon(
                             Icons.Default.Search,
                             contentDescription = null,
-                            tint = ShivaCyan,
+                            tint = ShivTheme.colors.primary,
                             modifier = Modifier.size(22.dp)
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
                             text = "Search apps, settings & system...",
                             style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
-                            color = TextSecondary,
+                            color = ShivTheme.colors.textSecondary,
                             modifier = Modifier.weight(1f)
                         )
                         Box(
                             modifier = Modifier
                                 .size(30.dp)
                                 .clip(CircleShape)
-                                .background(ShivaCyan.copy(alpha = 0.15f)),
+                                .background(ShivTheme.colors.primary.copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 Icons.Default.Apps,
                                 contentDescription = "All Apps",
-                                tint = ShivaCyan,
+                                tint = ShivTheme.colors.primary,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -330,11 +330,11 @@ fun ShivOSLiteLauncherScreen(
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp))
+                        .clip(RoundedCornerShape(ShivTheme.cardRadius))
                         .clickable { onNavigate("chat") },
-                    shape = RoundedCornerShape(20.dp),
-                    color = ShivaIndigo.copy(alpha = 0.22f),
-                    border = BorderStroke(1.dp, ShivaCyan.copy(alpha = 0.4f))
+                    shape = RoundedCornerShape(ShivTheme.cardRadius),
+                    color = ShivTheme.colors.surfaceVariant.copy(alpha = 0.7f),
+                    border = BorderStroke(1.dp, ShivTheme.colors.primary.copy(alpha = 0.4f))
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 11.dp),
@@ -348,12 +348,12 @@ fun ShivOSLiteLauncherScreen(
                                 Text(
                                     text = "Ask ShivAI",
                                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = TextPrimary
+                                    color = ShivTheme.colors.textPrimary
                                 )
                                 Text(
                                     text = "Cognitive reasoning, research & actions",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = TextSecondary
+                                    color = ShivTheme.colors.textSecondary
                                 )
                             }
                         }
@@ -362,9 +362,9 @@ fun ShivOSLiteLauncherScreen(
                             modifier = Modifier
                                 .size(34.dp)
                                 .clip(CircleShape)
-                                .background(ShivaCyan.copy(alpha = 0.2f))
+                                .background(ShivTheme.colors.primary.copy(alpha = 0.15f))
                         ) {
-                            Icon(Icons.Default.Mic, contentDescription = "Voice", tint = ShivaCyan, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.Mic, contentDescription = "Voice", tint = ShivTheme.colors.primary, modifier = Modifier.size(18.dp))
                         }
                     }
                 }
@@ -392,12 +392,12 @@ fun ShivOSLiteLauncherScreen(
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = 1.2.sp
                             ),
-                            color = TextSecondary.copy(alpha = 0.8f)
+                            color = ShivTheme.colors.textSecondary.copy(alpha = 0.8f)
                         )
                         Text(
                             text = "Long press empty area to edit",
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                            color = TextTertiary
+                            color = ShivTheme.colors.textSecondary.copy(alpha = 0.6f)
                         )
                     }
 
@@ -434,10 +434,10 @@ fun ShivOSLiteLauncherScreen(
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(26.dp)),
-                        shape = RoundedCornerShape(26.dp),
-                        color = CosmicSurfaceVariant.copy(alpha = 0.75f),
-                        border = BorderStroke(1.dp, CosmicCardBorder.copy(alpha = 0.6f))
+                            .clip(RoundedCornerShape(ShivTheme.cardRadius)),
+                        shape = RoundedCornerShape(ShivTheme.cardRadius),
+                        color = ShivTheme.colors.surfaceVariant.copy(alpha = 0.75f),
+                        border = BorderStroke(1.dp, ShivTheme.colors.cardBorder.copy(alpha = 0.6f))
                     ) {
                         Row(
                             modifier = Modifier
@@ -467,9 +467,9 @@ fun ShivOSLiteLauncherScreen(
                     modifier = Modifier
                         .clip(RoundedCornerShape(20.dp))
                         .clickable { onNavigate("all_apps") },
-                    color = CosmicSurfaceVariant.copy(alpha = 0.5f),
+                    color = ShivTheme.colors.surfaceVariant.copy(alpha = 0.5f),
                     shape = RoundedCornerShape(20.dp),
-                    border = BorderStroke(1.dp, CosmicCardBorder.copy(alpha = 0.4f))
+                    border = BorderStroke(1.dp, ShivTheme.colors.cardBorder.copy(alpha = 0.4f))
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp),
@@ -478,14 +478,14 @@ fun ShivOSLiteLauncherScreen(
                         Icon(
                             Icons.Default.KeyboardArrowUp,
                             contentDescription = "Swipe up",
-                            tint = ShivaCyan,
+                            tint = ShivTheme.colors.primary,
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "Swipe up for all apps",
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                            color = TextPrimary
+                            color = ShivTheme.colors.textPrimary
                         )
                     }
                 }
@@ -498,7 +498,7 @@ fun ShivOSLiteLauncherScreen(
         if (showHomeEditModal) {
             ModalBottomSheet(
                 onDismissRequest = { showHomeEditModal = false },
-                containerColor = CosmicSurface,
+                containerColor = ShivTheme.colors.surface,
                 scrimColor = Color.Black.copy(alpha = 0.7f),
                 shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
             ) {
@@ -519,15 +519,15 @@ fun ShivOSLiteLauncherScreen(
                             Text(
                                 text = "Home Screen Options",
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                color = TextPrimary
+                                color = ShivTheme.colors.textPrimary
                             )
                         }
                         IconButton(onClick = { showHomeEditModal = false }) {
-                            Icon(Icons.Default.Close, contentDescription = "Close", tint = TextSecondary)
+                            Icon(Icons.Default.Close, contentDescription = "Close", tint = ShivTheme.colors.textSecondary)
                         }
                     }
 
-                    Divider(color = CosmicCardBorder.copy(alpha = 0.5f))
+                    HorizontalDivider(color = ShivTheme.colors.cardBorder.copy(alpha = 0.5f))
 
                     // Action buttons grid
                     Row(
@@ -543,17 +543,17 @@ fun ShivOSLiteLauncherScreen(
                                     showHomeEditModal = false
                                     onNavigate("studio")
                                 },
-                            color = CosmicSurfaceVariant.copy(alpha = 0.8f),
+                            color = ShivTheme.colors.surfaceVariant.copy(alpha = 0.8f),
                             shape = RoundedCornerShape(16.dp),
-                            border = BorderStroke(1.dp, ShivaCyan.copy(alpha = 0.4f))
+                            border = BorderStroke(1.dp, ShivTheme.colors.primary.copy(alpha = 0.4f))
                         ) {
                             Column(
                                 modifier = Modifier.padding(14.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                Icon(Icons.Default.Palette, contentDescription = null, tint = ShivaCyan, modifier = Modifier.size(24.dp))
+                                Icon(Icons.Default.Palette, contentDescription = null, tint = ShivTheme.colors.primary, modifier = Modifier.size(24.dp))
                                 Spacer(modifier = Modifier.height(6.dp))
-                                Text("SHIV Studio", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
+                                Text("SHIV Studio", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = ShivTheme.colors.textPrimary)
                             }
                         }
 
@@ -573,17 +573,17 @@ fun ShivOSLiteLauncherScreen(
                                     viewModel.applyProfile(nextProfile)
                                     Toast.makeText(context, "Applied ${nextProfile.title} Profile", Toast.LENGTH_SHORT).show()
                                 },
-                            color = CosmicSurfaceVariant.copy(alpha = 0.8f),
+                            color = ShivTheme.colors.surfaceVariant.copy(alpha = 0.8f),
                             shape = RoundedCornerShape(16.dp),
-                            border = BorderStroke(1.dp, ShivaPurple.copy(alpha = 0.4f))
+                            border = BorderStroke(1.dp, ShivTheme.colors.accent.copy(alpha = 0.4f))
                         ) {
                             Column(
                                 modifier = Modifier.padding(14.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                Icon(Icons.Default.AccountCircle, contentDescription = null, tint = ShivaPurple, modifier = Modifier.size(24.dp))
+                                Icon(Icons.Default.AccountCircle, contentDescription = null, tint = ShivTheme.colors.accent, modifier = Modifier.size(24.dp))
                                 Spacer(modifier = Modifier.height(6.dp))
-                                Text("Profile", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
+                                Text("Profile", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = ShivTheme.colors.textPrimary)
                             }
                         }
 
@@ -597,7 +597,7 @@ fun ShivOSLiteLauncherScreen(
                                     viewModel.studioThemeEngine?.setGridDimensions(currentTheme.gridRows, nextCols)
                                     Toast.makeText(context, "Grid set to ${nextCols} columns", Toast.LENGTH_SHORT).show()
                                 },
-                            color = CosmicSurfaceVariant.copy(alpha = 0.8f),
+                            color = ShivTheme.colors.surfaceVariant.copy(alpha = 0.8f),
                             shape = RoundedCornerShape(16.dp),
                             border = BorderStroke(1.dp, ShivaAmber.copy(alpha = 0.4f))
                         ) {
@@ -607,7 +607,7 @@ fun ShivOSLiteLauncherScreen(
                             ) {
                                 Icon(Icons.Default.GridOn, contentDescription = null, tint = ShivaAmber, modifier = Modifier.size(24.dp))
                                 Spacer(modifier = Modifier.height(6.dp))
-                                Text("Grid ${currentTheme.gridColumns}x${currentTheme.gridRows}", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
+                                Text("Grid ${currentTheme.gridColumns}x${currentTheme.gridRows}", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = ShivTheme.colors.textPrimary)
                             }
                         }
                     }
@@ -656,7 +656,7 @@ fun ShivOSLiteLauncherScreen(
             val app = selectedAppForOptions!!
             ModalBottomSheet(
                 onDismissRequest = { selectedAppForOptions = null },
-                containerColor = CosmicSurface,
+                containerColor = ShivTheme.colors.surface,
                 shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
             ) {
                 Column(
@@ -668,15 +668,15 @@ fun ShivOSLiteLauncherScreen(
                     Text(
                         text = app.name,
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = TextPrimary
+                        color = ShivTheme.colors.textPrimary
                     )
                     Text(
                         text = app.packageName,
                         style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary
+                        color = ShivTheme.colors.textSecondary
                     )
 
-                    Divider(color = CosmicCardBorder.copy(alpha = 0.5f))
+                    HorizontalDivider(color = ShivTheme.colors.cardBorder.copy(alpha = 0.5f))
 
                     // Open App
                     Surface(
@@ -687,12 +687,12 @@ fun ShivOSLiteLauncherScreen(
                                 selectedAppForOptions = null
                                 viewModel.onAppClicked(app.packageName)
                             },
-                        color = CosmicSurfaceVariant.copy(alpha = 0.6f)
+                        color = ShivTheme.colors.surfaceVariant.copy(alpha = 0.6f)
                     ) {
                         Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Launch, contentDescription = null, tint = ShivaCyan)
+                            Icon(Icons.Default.Launch, contentDescription = null, tint = ShivTheme.colors.primary)
                             Spacer(modifier = Modifier.width(12.dp))
-                            Text("Open Application", color = TextPrimary, fontWeight = FontWeight.Medium)
+                            Text("Open Application", color = ShivTheme.colors.textPrimary, fontWeight = FontWeight.Medium)
                         }
                     }
 
@@ -708,12 +708,12 @@ fun ShivOSLiteLauncherScreen(
                                 }
                                 context.startActivity(intent)
                             },
-                        color = CosmicSurfaceVariant.copy(alpha = 0.6f)
+                        color = ShivTheme.colors.surfaceVariant.copy(alpha = 0.6f)
                     ) {
                         Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Info, contentDescription = null, tint = ShivaIndigo)
+                            Icon(Icons.Default.Info, contentDescription = null, tint = ShivTheme.colors.accent)
                             Spacer(modifier = Modifier.width(12.dp))
-                            Text("App Details & Permissions", color = TextPrimary, fontWeight = FontWeight.Medium)
+                            Text("App Details & Permissions", color = ShivTheme.colors.textPrimary, fontWeight = FontWeight.Medium)
                         }
                     }
 
@@ -732,13 +732,13 @@ fun ShivOSLiteLauncherScreen(
                                     Toast.LENGTH_SHORT
                                 ).show()
                             },
-                        color = CosmicSurfaceVariant.copy(alpha = 0.6f)
+                        color = ShivTheme.colors.surfaceVariant.copy(alpha = 0.6f)
                     ) {
                         Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Lock, contentDescription = null, tint = ShivaAmber)
                             Spacer(modifier = Modifier.width(12.dp))
                             val isCurrentlyLocked = viewModel.appLockManager?.isAppLocked(app.packageName) == true
-                            Text(if (isCurrentlyLocked) "Remove SHIV Lock" else "Protect with SHIV Lock", color = TextPrimary, fontWeight = FontWeight.Medium)
+                            Text(if (isCurrentlyLocked) "Remove SHIV Lock" else "Protect with SHIV Lock", color = ShivTheme.colors.textPrimary, fontWeight = FontWeight.Medium)
                         }
                     }
 
@@ -754,7 +754,7 @@ fun ShivOSLiteLauncherScreen(
                                 }
                                 context.startActivity(intent)
                             },
-                        color = CosmicSurfaceVariant.copy(alpha = 0.6f)
+                        color = ShivTheme.colors.surfaceVariant.copy(alpha = 0.6f)
                     ) {
                         Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Delete, contentDescription = null, tint = ShivaRed)
@@ -836,7 +836,7 @@ fun AppGridItemWithLongPress(
             modifier = Modifier
                 .size(scaledSize)
                 .clip(shapeCorner)
-                .background(CosmicSurfaceVariant.copy(alpha = 0.65f))
+                .background(ShivTheme.colors.surfaceVariant.copy(alpha = 0.65f))
                 .padding(2.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -853,7 +853,7 @@ fun AppGridItemWithLongPress(
                 val initial = app.name.firstOrNull()?.uppercase() ?: "A"
                 val colorHash = app.packageName.hashCode()
                 val accentColor = when (kotlin.math.abs(colorHash) % 5) {
-                    0 -> ShivaCyan
+                    0 -> ShivTheme.colors.primary
                     1 -> ShivaIndigo
                     2 -> ShivaPurple
                     3 -> ShivaPink
@@ -882,7 +882,7 @@ fun AppGridItemWithLongPress(
             Text(
                 text = app.name,
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, fontWeight = FontWeight.Medium),
-                color = TextPrimary,
+                color = ShivTheme.colors.textPrimary,
                 textAlign = TextAlign.Center,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis

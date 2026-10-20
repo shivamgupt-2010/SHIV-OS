@@ -53,8 +53,15 @@ class ShivAIActionDispatcher(
             when (actionType) {
                 "APPLY_THEME" -> {
                     val preset = payload.getString("presetKey")
-                    val validPresets = listOf("COSMIC_SHIVA", "CYAN_NEON", "ROYAL_PURPLE", "SOLAR_GOLD", "OLED_BLACK")
-                    if (!validPresets.contains(preset)) {
+                    val validPresets = listOf(
+                        "COSMIC_SHIVA", "CYAN_NEON", "ROYAL_PURPLE", "SOLAR_GOLD", "OLED_BLACK",
+                        "PURE_LIGHT", "SOFT_LIGHT", "MATERIAL_LIGHT", "MINIMAL_STUDIO",
+                        "AURORA_LIGHT", "NATURE_LIGHT", "PASTEL_LIGHT", "PAPER",
+                        "PURE_DARK", "MIDNIGHT", "AURORA_DARK", "GRAPHITE", "AMOLED", "FOREST_DARK", "STUDIO_DARK",
+                        "OCEAN", "SUNSET", "GLASS", "MONOCHROME", "COLORFUL_POP", "GRADIENT_FLOW", "MINIMAL_COLOR", "CUSTOM_ACCENT",
+                        "ADAPTIVE_SYSTEM", "ADAPTIVE_WALLPAPER", "ADAPTIVE_SCHEDULE"
+                    )
+                    if (!validPresets.contains(preset) && !com.example.core.studio.StudioThemeTokens.PRESETS.containsKey(preset) && !preset.startsWith("CUSTOM")) {
                         return ShivAIAction.InvalidAction("Unknown theme preset: $preset")
                     }
                     val reason = payload.optString("reason", "AI recommended theme")

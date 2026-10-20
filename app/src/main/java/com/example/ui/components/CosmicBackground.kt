@@ -13,121 +13,146 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
-import com.example.ui.theme.CosmicBackground
-import com.example.ui.theme.ShivaBlue
-import com.example.ui.theme.ShivaCyan
-import com.example.ui.theme.ShivaIndigo
-import com.example.ui.theme.ShivaOrange
-import com.example.ui.theme.ShivaPurple
+import com.example.ui.theme.*
 
 /**
  * Renders the cosmic Lord Shiva meditation atmosphere with starry sky,
  * glowing nebula, distant mountain ridges, and meditative silhouette with Trishul.
+ * Dynamically adapts to active Light or Dark theme.
  */
 @Composable
 fun CosmicBackground(
     modifier: Modifier = Modifier,
     showSilhouette: Boolean = true
 ) {
+    val isDark = ShivTheme.isDark
     val currentHour = androidx.compose.runtime.remember {
         java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
     }
 
-    val cosmicColors = androidx.compose.runtime.remember(currentHour) {
-        when (currentHour) {
-            in 3..5 -> listOf( // Brahma Muhurta: Mystical violet, deep saffron auroras
-                Color(0xFF080614),
-                Color(0xFF140D2B),
-                Color(0xFF261447),
-                Color(0xFF431C53),
-                Color(0xFF63254A),
-                Color(0xFF260F25),
-                CosmicBackground
+    val backgroundColors = androidx.compose.runtime.remember(currentHour, isDark) {
+        if (!isDark) {
+            // Serene Celestial Daylight Atmosphere
+            listOf(
+                Color(0xFFE0F2FE),
+                Color(0xFFEDF7FD),
+                Color(0xFFF4F9FE),
+                Color(0xFFF8FAFC),
+                Color(0xFFFFFFFF)
             )
-            in 6..16 -> listOf( // Day: Celestial Deep Azure & Sapphire
-                Color(0xFF060D1A),
-                Color(0xFF0A1830),
-                Color(0xFF0F2447),
-                Color(0xFF162D50),
-                Color(0xFF182236),
-                Color(0xFF0D1726),
-                CosmicBackground
-            )
-            in 17..19 -> listOf( // Sandhya: Twilight crimson & imperial cosmic purple
-                Color(0xFF0E071A),
-                Color(0xFF1F0D33),
-                Color(0xFF381345),
-                Color(0xFF581C45),
-                Color(0xFF6B2135),
-                Color(0xFF2E1122),
-                CosmicBackground
-            )
-            else -> listOf( // Ratri: Obsidian void & cosmic starlight
-                Color(0xFF06080E),
-                Color(0xFF0B101D),
-                Color(0xFF131A2D),
-                Color(0xFF1F1B38),
-                Color(0xFF2C1635),
-                Color(0xFF1A1224),
-                CosmicBackground
-            )
+        } else {
+            when (currentHour) {
+                in 3..5 -> listOf( // Brahma Muhurta: Mystical violet, deep saffron auroras
+                    Color(0xFF080614),
+                    Color(0xFF140D2B),
+                    Color(0xFF261447),
+                    Color(0xFF431C53),
+                    Color(0xFF63254A),
+                    Color(0xFF260F25),
+                    CosmicBackground
+                )
+                in 6..16 -> listOf( // Day: Celestial Deep Azure & Sapphire
+                    Color(0xFF060D1A),
+                    Color(0xFF0A1830),
+                    Color(0xFF0F2447),
+                    Color(0xFF162D50),
+                    Color(0xFF182236),
+                    Color(0xFF0D1726),
+                    CosmicBackground
+                )
+                in 17..19 -> listOf( // Sandhya: Twilight crimson & imperial cosmic purple
+                    Color(0xFF0E071A),
+                    Color(0xFF1F0D33),
+                    Color(0xFF381345),
+                    Color(0xFF581C45),
+                    Color(0xFF6B2135),
+                    Color(0xFF2E1122),
+                    CosmicBackground
+                )
+                else -> listOf( // Ratri: Obsidian void & cosmic starlight
+                    Color(0xFF06080E),
+                    Color(0xFF0B101D),
+                    Color(0xFF131A2D),
+                    Color(0xFF1F1B38),
+                    Color(0xFF2C1635),
+                    Color(0xFF1A1224),
+                    CosmicBackground
+                )
+            }
         }
     }
+
+    val primaryAccent = ShivTheme.colors.primary
 
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(colors = cosmicColors))
+            .background(Brush.verticalGradient(colors = backgroundColors))
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val width = size.width
             val height = size.height
 
-            // 1. Draw glowing nebula aura
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        ShivaIndigo.copy(alpha = 0.25f),
-                        ShivaPurple.copy(alpha = 0.15f),
-                        Color.Transparent
-                    ),
-                    center = Offset(width * 0.5f, height * 0.22f),
-                    radius = width * 0.65f
+            if (isDark) {
+                // 1. Draw glowing nebula aura
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            ShivaIndigo.copy(alpha = 0.25f),
+                            ShivaPurple.copy(alpha = 0.15f),
+                            Color.Transparent
+                        ),
+                        center = Offset(width * 0.5f, height * 0.22f),
+                        radius = width * 0.65f
+                    )
                 )
-            )
 
-            // 2. Horizon warm glow (sunrise behind mountains)
-            drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        ShivaOrange.copy(alpha = 0.18f),
-                        ShivaPurple.copy(alpha = 0.08f),
-                        Color.Transparent
-                    ),
-                    center = Offset(width * 0.75f, height * 0.32f),
-                    radius = width * 0.45f
+                // 2. Horizon warm glow (sunrise behind mountains)
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            ShivaOrange.copy(alpha = 0.18f),
+                            ShivaPurple.copy(alpha = 0.08f),
+                            Color.Transparent
+                        ),
+                        center = Offset(width * 0.75f, height * 0.32f),
+                        radius = width * 0.45f
+                    )
                 )
-            )
 
-            // 3. Stars in the upper cosmos
-            val starPositions = listOf(
-                Offset(width * 0.12f, height * 0.06f),
-                Offset(width * 0.28f, height * 0.03f),
-                Offset(width * 0.45f, height * 0.08f),
-                Offset(width * 0.68f, height * 0.04f),
-                Offset(width * 0.85f, height * 0.07f),
-                Offset(width * 0.92f, height * 0.14f),
-                Offset(width * 0.08f, height * 0.18f),
-                Offset(width * 0.22f, height * 0.15f),
-                Offset(width * 0.38f, height * 0.19f),
-                Offset(width * 0.82f, height * 0.21f),
-                Offset(width * 0.15f, height * 0.28f),
-                Offset(width * 0.88f, height * 0.30f)
-            )
-            starPositions.forEachIndexed { i, pos ->
-                val starAlpha = if (i % 2 == 0) 0.8f else 0.5f
-                val radius = if (i % 3 == 0) 2.2f else 1.4f
-                drawCircle(color = Color.White.copy(alpha = starAlpha), radius = radius, center = pos)
+                // 3. Stars in the upper cosmos
+                val starPositions = listOf(
+                    Offset(width * 0.12f, height * 0.06f),
+                    Offset(width * 0.28f, height * 0.03f),
+                    Offset(width * 0.45f, height * 0.08f),
+                    Offset(width * 0.68f, height * 0.04f),
+                    Offset(width * 0.85f, height * 0.07f),
+                    Offset(width * 0.92f, height * 0.14f),
+                    Offset(width * 0.08f, height * 0.18f),
+                    Offset(width * 0.22f, height * 0.15f),
+                    Offset(width * 0.38f, height * 0.19f),
+                    Offset(width * 0.82f, height * 0.21f),
+                    Offset(width * 0.15f, height * 0.28f),
+                    Offset(width * 0.88f, height * 0.30f)
+                )
+                starPositions.forEachIndexed { i, pos ->
+                    val starAlpha = if (i % 2 == 0) 0.8f else 0.5f
+                    val radius = if (i % 3 == 0) 2.2f else 1.4f
+                    drawCircle(color = Color.White.copy(alpha = starAlpha), radius = radius, center = pos)
+                }
+            } else {
+                // Daytime luminous celestial aura
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            primaryAccent.copy(alpha = 0.14f),
+                            Color(0xFFFEF3C7).copy(alpha = 0.18f),
+                            Color.Transparent
+                        ),
+                        center = Offset(width * 0.6f, height * 0.18f),
+                        radius = width * 0.7f
+                    )
+                )
             }
 
             if (showSilhouette) {
@@ -148,24 +173,29 @@ fun CosmicBackground(
                 drawPath(
                     path = mountainPath,
                     brush = Brush.verticalGradient(
-                        colors = listOf(Color(0xFF1E162B).copy(alpha = 0.7f), Color.Transparent),
+                        colors = if (isDark) {
+                            listOf(Color(0xFF1E162B).copy(alpha = 0.7f), Color.Transparent)
+                        } else {
+                            listOf(Color(0xFF94A3B8).copy(alpha = 0.25f), Color.Transparent)
+                        },
                         startY = headerBaseY - 60f,
                         endY = headerBaseY + 60f
                     )
                 )
 
-                // 5. Lord Shiva in Meditation Silhouette (Right side of cosmic sky)
+                // 5. Lord Shiva in Meditation Silhouette
                 val shivaCenterX = width * 0.78f
                 val shivaCenterY = headerBaseY - 40f
-                val shivaColor = Color(0xFF0F1424)
+                val shivaColor = if (isDark) Color(0xFF0F1424) else Color(0xFF475569)
+                val trishulColor = primaryAccent
 
                 // Head & Jata (Top knot)
                 drawCircle(color = shivaColor, radius = 22f, center = Offset(shivaCenterX, shivaCenterY - 38f))
-                drawCircle(color = shivaColor, radius = 13f, center = Offset(shivaCenterX, shivaCenterY - 56f)) // Jata
+                drawCircle(color = shivaColor, radius = 13f, center = Offset(shivaCenterX, shivaCenterY - 56f))
 
                 // Crescent Moon on Jata
                 drawCircle(
-                    color = ShivaCyan.copy(alpha = 0.85f),
+                    color = trishulColor.copy(alpha = 0.85f),
                     radius = 5f,
                     center = Offset(shivaCenterX + 10f, shivaCenterY - 58f)
                 )
@@ -187,21 +217,21 @@ fun CosmicBackground(
                     size = androidx.compose.ui.geometry.Size(90f, 32f)
                 )
 
-                // Trishul (Trident) standing beside
+                // Trishul (Trident)
                 val trishulX = shivaCenterX - 32f
                 val trishulTopY = shivaCenterY - 75f
                 val trishulBottomY = shivaCenterY + 28f
 
                 // Shaft
                 drawLine(
-                    color = ShivaCyan.copy(alpha = 0.9f),
+                    color = trishulColor.copy(alpha = 0.9f),
                     start = Offset(trishulX, trishulBottomY),
                     end = Offset(trishulX, trishulTopY),
                     strokeWidth = 3f
                 )
                 // Middle prong
                 drawLine(
-                    color = ShivaCyan.copy(alpha = 0.9f),
+                    color = trishulColor.copy(alpha = 0.9f),
                     start = Offset(trishulX, trishulTopY),
                     end = Offset(trishulX, trishulTopY - 14f),
                     strokeWidth = 3f
@@ -211,14 +241,14 @@ fun CosmicBackground(
                     moveTo(trishulX, trishulTopY + 4f)
                     cubicTo(trishulX - 10f, trishulTopY, trishulX - 12f, trishulTopY - 8f, trishulX - 8f, trishulTopY - 12f)
                 }
-                drawPath(leftProng, color = ShivaCyan.copy(alpha = 0.9f), style = Stroke(width = 3f))
+                drawPath(leftProng, color = trishulColor.copy(alpha = 0.9f), style = Stroke(width = 3f))
 
                 // Right curve prong
                 val rightProng = Path().apply {
                     moveTo(trishulX, trishulTopY + 4f)
                     cubicTo(trishulX + 10f, trishulTopY, trishulX + 12f, trishulTopY - 8f, trishulX + 8f, trishulTopY - 12f)
                 }
-                drawPath(rightProng, color = ShivaCyan.copy(alpha = 0.9f), style = Stroke(width = 3f))
+                drawPath(rightProng, color = trishulColor.copy(alpha = 0.9f), style = Stroke(width = 3f))
 
                 // Damru (small hourglass)
                 val damruY = trishulTopY + 16f

@@ -21,7 +21,7 @@ import com.example.data.local.entity.*
         FamilyPolicyEntity::class,
         SyncQueueEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

@@ -7,10 +7,23 @@ import androidx.room.PrimaryKey
 data class LauncherThemeEntity(
     @PrimaryKey
     val id: String = "current_theme",
-    val themePreset: String = "COSMIC_SHIVA", // "COSMIC_SHIVA", "CYAN_NEON", "ROYAL_PURPLE", "SOLAR_GOLD", "OLED_BLACK"
+    val themePreset: String = "COSMIC_SHIVA",
+    val themeCategory: String = "EXPRESSIVE", // "LIGHT", "DARK", "EXPRESSIVE", "ADAPTIVE", "CUSTOM"
+    val isCustomTheme: Boolean = false,
+    val customThemeName: String = "Cosmic Shiva",
     val primaryColorHex: String = "#00F5FF",
     val accentColorHex: String = "#8A2BE2",
-    val surfaceColorHex: String = "#0A0B10",
+    val surfaceColorHex: String = "#0E1019",
+    val backgroundColorHex: String = "#07080E",
+    val surfaceVariantColorHex: String = "#1A2130",
+    val cardBorderColorHex: String = "#252E42",
+    val textPrimaryColorHex: String = "#F8FAFC",
+    val textSecondaryColorHex: String = "#94A3B8",
+    val isDark: Boolean = true,
+    val cardCornerRadiusDp: Int = 18, // 0 - 28
+    val typographyStyle: String = "DEFAULT", // "DEFAULT", "MODERN", "SERIF", "MONO"
+    val animationPreset: String = "SMOOTH", // "MINIMAL", "SMOOTH", "EXPRESSIVE"
+    val adaptiveMode: String = "NONE", // "NONE", "SYSTEM", "WALLPAPER", "SCHEDULE"
     val iconShape: String = "SQUIRCLE", // "CIRCLE", "SQUIRCLE", "ROUNDED_RECT", "TEARDROP"
     val iconScalePercent: Int = 100, // 80 - 120
     val gridRows: Int = 5,

@@ -169,7 +169,7 @@ class AppContainer(private val context: Context) {
     }
 
     val shivAIActionDispatcher: com.example.core.ai.ShivAIActionDispatcher by lazy {
-        com.example.core.ai.ShivAIActionDispatcher(studioThemeEngine, layoutManager, appLockManager, wellbeingManager, familyManager)
+        com.example.core.ai.ShivAIActionDispatcher(studioThemeEngine, layoutManager, appLockManager, wellbeingManager, familyManager, launcherShellManager)
     }
 
     // Repositories
@@ -295,11 +295,11 @@ class AppContainer(private val context: Context) {
     }
 
     val speechToTextEngine: com.example.ai.voice.stt.SpeechToTextEngine by lazy {
-        com.example.ai.voice.stt.AndroidSpeechToText(context)
+        com.example.ai.voice.stt.ShivStreamingSttEngine(context)
     }
 
     val textToSpeechEngine: com.example.ai.voice.tts.TextToSpeechEngine by lazy {
-        com.example.ai.voice.tts.AndroidTextToSpeech(context)
+        com.example.ai.voice.tts.ShivNeuralTtsEngine(context)
     }
 
     val wakeWordEngine: com.example.ai.voice.wake.WakeWordEngine by lazy {
