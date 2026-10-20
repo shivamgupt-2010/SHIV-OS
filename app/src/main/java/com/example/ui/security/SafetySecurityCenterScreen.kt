@@ -107,14 +107,7 @@ fun SafetySecurityCenterScreen(
                     containerColor = Color.Transparent,
                     contentColor = ShivTheme.colors.primary,
                     edgePadding = 16.dp,
-                    indicator = { tabPositions ->
-                        TabRowDefaults.SecondaryIndicator(
-                            modifier = Modifier.tabIndicatorOffset(tabPositions[selectedSection.ordinal]),
-                            color = ShivTheme.colors.primary,
-                            height = 3.dp
-                        )
-                    },
-                    divider = { HorizontalDivider(color = ShivTheme.colors.cardBorder.copy(alpha = 0.3f)) }
+                    divider = {}
                 ) {
                     SafetySection.entries.forEach { section ->
                         val isSelected = selectedSection == section
@@ -981,8 +974,9 @@ fun ShivLockTab(appLockManager: AppLockManager, installedApps: List<AppInfo>) {
                     ) {
                         Button(
                             onClick = {
-                                val socialPackages = installedApps.filter { it.category == com.example.core.launcher.AppCategory.COMMUNICATION }
-                                    .map { Pair(it.packageName, it.name) }
+                                val socialPackages = installedApps.filter { 
+                                    com.example.ui.launcher.classifyAppCategory(it.packageName, it.name) == "Communication" 
+                                }.map { Pair(it.packageName, it.name) }
                                 appLockManager.lockCategory(socialPackages, true)
                                 Toast.makeText(context, "Protected all Communication & Social apps", Toast.LENGTH_SHORT).show()
                             },
@@ -993,8 +987,9 @@ fun ShivLockTab(appLockManager: AppLockManager, installedApps: List<AppInfo>) {
                         }
                         Button(
                             onClick = {
-                                val mediaPackages = installedApps.filter { it.category == com.example.core.launcher.AppCategory.ENTERTAINMENT }
-                                    .map { Pair(it.packageName, it.name) }
+                                val mediaPackages = installedApps.filter { 
+                                    com.example.ui.launcher.classifyAppCategory(it.packageName, it.name) == "Media" 
+                                }.map { Pair(it.packageName, it.name) }
                                 appLockManager.lockCategory(mediaPackages, true)
                                 Toast.makeText(context, "Protected all Media & Entertainment apps", Toast.LENGTH_SHORT).show()
                             },
