@@ -512,3 +512,19 @@ fun AgentCard(
         }
     }
 }
+
+@Composable
+fun BottomBarTab(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    androidx.compose.material3.NavigationBarItem(
+        icon = { Icon(icon, contentDescription = label) },
+        label = { Text(label) },
+        selected = isSelected,
+        onClick = onClick
+    )
+}
+

@@ -222,7 +222,7 @@ class LauncherActivity : ComponentActivity() {
                             if (lockedPkg != null) {
                                 AlertDialog(
                                     onDismissRequest = { launcherViewModel.dismissPrompts() },
-                                    icon = { Icon(androidx.compose.material.icons.Icons.Default.Lock, contentDescription = null, tint = com.example.ui.theme.ShivaCyan) },
+                                    icon = { Icon(androidx.compose.material.icons.Icons.Default.Info, contentDescription = null, tint = com.example.ui.theme.ShivaCyan) },
                                     title = { Text("App Protected by SHIV Lock") },
                                     text = { Text("Authentication required to launch this application.", style = MaterialTheme.typography.bodyMedium) },
                                     confirmButton = {
@@ -243,7 +243,7 @@ class LauncherActivity : ComponentActivity() {
                             if (frictionPkg != null) {
                                 AlertDialog(
                                     onDismissRequest = { launcherViewModel.dismissPrompts() },
-                                    icon = { Icon(androidx.compose.material.icons.Icons.Default.HourglassBottom, contentDescription = null, tint = com.example.ui.theme.ShivaCyan) },
+                                    icon = { Icon(androidx.compose.material.icons.Icons.Default.Star, contentDescription = null, tint = com.example.ui.theme.ShivaCyan) },
                                     title = { Text("Mindful Pause") },
                                     text = { Text("Take a deep breath. Are you opening this app intentionally or by habit?", style = MaterialTheme.typography.bodyMedium) },
                                     confirmButton = {
@@ -264,7 +264,7 @@ class LauncherActivity : ComponentActivity() {
                             if (familyBlockedPkg != null) {
                                 AlertDialog(
                                     onDismissRequest = { launcherViewModel.dismissPrompts() },
-                                    icon = { Icon(androidx.compose.material.icons.Icons.Default.FamilyRestroom, contentDescription = null, tint = com.example.ui.theme.ShivaOrange) },
+                                    icon = { Icon(androidx.compose.material.icons.Icons.Default.Person, contentDescription = null, tint = com.example.ui.theme.ShivaOrange) },
                                     title = { Text("Restricted by SHIV Family") },
                                     text = { Text("This application is currently restricted under child supervision or active bedtime curfew.", style = MaterialTheme.typography.bodyMedium) },
                                     confirmButton = {

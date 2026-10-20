@@ -131,7 +131,7 @@ class ShivAIActionDispatcher(
     fun executeAction(action: ShivAIAction, isUserConfirmed: Boolean = false): Boolean {
         return when (action) {
             is ShivAIAction.ApplyTheme -> {
-                previousThemePreset = themeEngine.currentTheme.value.presetKey
+                previousThemePreset = themeEngine.currentTheme.value.key
                 themeEngine.applyPreset(action.presetKey)
                 true
             }
@@ -142,15 +142,15 @@ class ShivAIActionDispatcher(
             }
 
             is ShivAIAction.SetAppBudget -> {
-                wellbeingManager.setBudget(action.packageName, action.dailyMinutes, requireFriction = true)
+                wellbeingManager.setAppBudget(action.packageName, action.packageName, action.dailyMinutes, intentionalFriction = true)
                 true
             }
 
             is ShivAIAction.OpenApp -> {
-                // SECURITY GUARD 1: Check Family Supervision Curfew
+                // SECURITY GUARD 1: Check Family Supervision Curfew & Restrictions
                 val (isCurfew, _) = familyManager.isAppBlockedByCurfew(action.packageName)
                 if (isCurfew) {
-                    return false // Curfew active, blocked
+                    return false // Curfew or parental restriction active, blocked
                 }
 
                 // SECURITY GUARD 2: Check App Lock policy

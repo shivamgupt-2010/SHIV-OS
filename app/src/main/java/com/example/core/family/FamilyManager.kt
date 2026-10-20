@@ -114,6 +114,11 @@ class FamilyManager(
         return true
     }
 
+    fun isAppBlockedByCurfew(packageName: String): Pair<Boolean, String?> {
+        val allowed = isAppAllowedForChild(packageName)
+        return Pair(!allowed, if (!allowed) "Curfew or parental restriction active" else null)
+    }
+
     fun isCurfewActive(): Boolean {
         val p = policy.value
         if (!p.isSupervised || !p.curfewEnabled) return false

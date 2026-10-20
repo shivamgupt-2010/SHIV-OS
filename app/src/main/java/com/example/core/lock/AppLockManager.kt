@@ -88,6 +88,14 @@ class AppLockManager(
         }
     }
 
+    fun setAppLocked(packageName: String, isLocked: Boolean, appName: String = "") {
+        toggleAppLock(packageName, appName.ifEmpty { packageName }, isLocked)
+    }
+
+    fun setAppLocked(packageName: String, appName: String, isLocked: Boolean) {
+        toggleAppLock(packageName, appName, isLocked)
+    }
+
     fun updatePolicyTimeout(packageName: String, timeoutSeconds: Int) {
         scope.launch(Dispatchers.IO) {
             val existing = appLockDao.getPolicyForPackage(packageName)

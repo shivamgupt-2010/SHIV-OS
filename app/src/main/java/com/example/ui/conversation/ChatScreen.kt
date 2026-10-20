@@ -600,3 +600,28 @@ fun FormattedMarkdownContent(content: String) {
         }
     }
 }
+
+@Composable
+fun PromptChip(
+    text: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        color = CosmicSurfaceVariant.copy(alpha = 0.7f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, CosmicCardBorder)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodySmall,
+            color = TextSecondary,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+        )
+    }
+}
+

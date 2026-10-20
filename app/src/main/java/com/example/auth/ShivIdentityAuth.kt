@@ -36,6 +36,9 @@ object ShivIdentityAuth {
     private val _authState = MutableStateFlow<OAuthState>(OAuthState.LoggedOut)
     val authState: StateFlow<OAuthState> = _authState.asStateFlow()
 
+    val accessToken: String?
+        get() = (authState.value as? OAuthState.Authenticated)?.accessToken
+
     sealed class OAuthState {
         object LoggedOut : OAuthState()
         object Authenticating : OAuthState()

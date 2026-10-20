@@ -16,6 +16,7 @@ val ShivaPurple = Color(0xFFA855F7)
 val ShivaPink = Color(0xFFEC4899)
 val ShivaOrange = Color(0xFFF97316)
 val ShivaAmber = Color(0xFFF59E0B)
+val ShivaYellow = Color(0xFFFBBF24)
 val ShivaGreen = Color(0xFF10B981)
 val ShivaRed = Color(0xFFEF4444)
 
