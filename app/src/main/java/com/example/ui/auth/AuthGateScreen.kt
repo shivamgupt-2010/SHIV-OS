@@ -26,7 +26,7 @@ import com.example.auth.ShivIdentityAuth
 import com.example.core.identity.UserProfileManager
 import com.example.core.lock.AppLockManager
 import com.example.ui.components.CosmicBackground
-import com.example.ui.components.TridentIcon
+import com.example.ui.components.TrishulIcon
 import com.example.ui.security.NumericKeypad
 import com.example.ui.security.PinDotsIndicator
 import com.example.ui.theme.ShivTheme
@@ -85,7 +85,7 @@ fun AuthGateScreen(
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    TridentIcon(tint = ShivTheme.colors.primary, size = 36.dp)
+                    TrishulIcon(size = 36.dp, tintGradient = listOf(ShivTheme.colors.primary, ShivTheme.colors.accent))
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))

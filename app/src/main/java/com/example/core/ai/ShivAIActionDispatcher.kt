@@ -236,7 +236,8 @@ class ShivAIActionDispatcher(
                         "LOCK_APP" -> {
                             val params = JSONObject(action.payloadJson)
                             val pkg = params.optString("packageName", "")
-                            if (pkg.isNotBlank()) appLockManager.toggleAppLock(pkg, true)
+                            val appName = params.optString("appName", pkg)
+                            if (pkg.isNotBlank()) appLockManager.toggleAppLock(pkg, appName, true)
                         }
                     }
                     true
