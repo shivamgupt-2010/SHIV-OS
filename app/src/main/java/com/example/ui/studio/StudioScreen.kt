@@ -38,16 +38,34 @@ import com.example.ui.components.CosmicBackground
 import com.example.ui.components.TrishulIcon
 import com.example.ui.theme.*
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.example.core.studio.WallpaperType
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StudioScreen(
     themeEngine: StudioThemeEngine,
     layoutManager: LayoutManager? = null,
+    wallpaperEngine: com.example.core.studio.WallpaperEngine? = null,
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
     val theme by themeEngine.currentTheme.collectAsState()
+    val activeWallpaper = wallpaperEngine?.currentWallpaper?.collectAsState()?.value
+
+    val galleryWallpaperLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val ok = wallpaperEngine?.setCustomImage(uri) ?: false
+            if (ok) {
+                Toast.makeText(context, "Custom wallpaper applied!", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
     val customThemes by themeEngine.customThemes.collectAsState()
     val activeComplexity = layoutManager?.activeComplexityMode?.collectAsState()?.value ?: ComplexityMode.BALANCED
     val activeProfile = layoutManager?.activeProfile?.collectAsState()?.value ?: ProfileType.EVERYDAY
@@ -241,6 +259,96 @@ fun StudioScreen(
 
                 // TAB 0: APPEARANCE (COMPLETE THEME CATALOGUE + CUSTOM THEME CREATOR)
                 if (selectedTab == 0) {
+                    // Wallpaper & Ambiance Selector
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        color = ShivTheme.colors.surfaceVariant,
+                        border = BorderStroke(1.dp, ShivTheme.colors.cardBorder)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Wallpaper, contentDescription = null, tint = ShivTheme.colors.primary, modifier = Modifier.size(20.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Wallpaper & Ambiance", fontWeight = FontWeight.Bold, color = ShivTheme.colors.textPrimary)
+                                }
+                                Text(
+                                    activeWallpaper?.name ?: "Cosmic",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = ShivTheme.colors.primary
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            // Wallpaper presets scroll row
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                val wpPresets = listOf(
+                                    Pair(WallpaperType.COSMIC, "Cosmic"),
+                                    Pair(WallpaperType.CYBER_NEON, "Cyber Neon"),
+                                    Pair(WallpaperType.AURORA, "Aurora"),
+                                    Pair(WallpaperType.MINIMAL_SLATE, "Slate"),
+                                    Pair(WallpaperType.SOLAR_DUSK, "Solar Dusk"),
+                                    Pair(WallpaperType.DEEP_OLED, "OLED Black")
+                                )
+
+                                wpPresets.forEach { (type, name) ->
+                                    val isSelected = activeWallpaper?.type == type
+                                    Surface(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .clickable { wallpaperEngine?.setPreset(type) },
+                                        color = if (isSelected) ShivTheme.colors.primary.copy(alpha = 0.25f) else ShivTheme.colors.surface,
+                                        border = BorderStroke(1.dp, if (isSelected) ShivTheme.colors.primary else ShivTheme.colors.cardBorder.copy(alpha = 0.3f))
+                                    ) {
+                                        Text(
+                                            text = name,
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (isSelected) ShivTheme.colors.primary else ShivTheme.colors.textSecondary
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Button(
+                                    onClick = { galleryWallpaperLauncher.launch("image/*") },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = ShivTheme.colors.primary)
+                                ) {
+                                    Icon(Icons.Default.PhotoLibrary, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Choose Photo", fontSize = 12.sp)
+                                }
+
+                                OutlinedButton(
+                                    onClick = { wallpaperEngine?.setPreset(WallpaperType.SYSTEM_WALLPAPER) },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Text("System", fontSize = 12.sp)
+                                }
+                            }
+                        }
+                    }
+
                     // Category Filter Tabs (Light, Dark, Expressive, Adaptive, Custom)
                     Row(
                         modifier = Modifier

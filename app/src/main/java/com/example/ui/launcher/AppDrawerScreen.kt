@@ -110,7 +110,8 @@ fun AppDrawerScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        CosmicBackground(showSilhouette = false)
+        val currentWallpaper by viewModel.currentWallpaper.collectAsState()
+        com.example.core.studio.LauncherWallpaperView(config = currentWallpaper)
 
         Scaffold(
             containerColor = Color.Transparent,

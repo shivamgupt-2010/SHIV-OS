@@ -67,7 +67,8 @@ class LauncherActivity : ComponentActivity() {
                                 appContainer.studioThemeEngine,
                                 appContainer.appLockManager,
                                 appContainer.wellbeingManager,
-                                appContainer.familyManager
+                                appContainer.familyManager,
+                                appContainer.wallpaperEngine
                             ) as T
                         }
                     }
@@ -88,12 +89,36 @@ class LauncherActivity : ComponentActivity() {
                     }
                 )
 
+                val keyguardManager = remember { getSystemService(android.content.Context.KEYGUARD_SERVICE) as android.app.KeyguardManager }
+                var isSessionAuthenticated by remember { mutableStateOf(false) }
+
+                // Lock screen safety check: ensure launcher does not expose contents if keyguard is active
+                DisposableEffect(Unit) {
+                    val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+                        if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                            if (keyguardManager.isKeyguardLocked) {
+                                isSessionAuthenticated = false
+                            }
+                        }
+                    }
+                    lifecycle.addObserver(observer)
+                    onDispose { lifecycle.removeObserver(observer) }
+                }
+
                 val prefs = getSharedPreferences("shivai_prefs", android.content.Context.MODE_PRIVATE)
                 val hasSeenOnboardingState = remember {
                     mutableStateOf(prefs.getBoolean("has_seen_onboarding", false))
                 }
 
-                if (!hasSeenOnboardingState.value) {
+                if (!isSessionAuthenticated) {
+                    com.example.ui.auth.AuthGateScreen(
+                        userProfileManager = appContainer.userProfileManager,
+                        appLockManager = appContainer.appLockManager,
+                        onAuthenticated = {
+                            isSessionAuthenticated = true
+                        }
+                    )
+                } else if (!hasSeenOnboardingState.value) {
                     com.example.ui.onboarding.OnboardingScreen(
                         layoutManager = appContainer.layoutManager,
                         themeEngine = appContainer.studioThemeEngine,
@@ -118,6 +143,7 @@ class LauncherActivity : ComponentActivity() {
                         drawerContent = {
                             SidebarDrawer(
                                 currentRoute = currentRoute,
+                                userProfileManager = appContainer.userProfileManager,
                                 onNavigate = { route ->
                                     if (route == "settings") {
                                         startActivity(Intent(this@LauncherActivity, com.example.ui.settings.SettingsActivity::class.java))
@@ -189,6 +215,7 @@ class LauncherActivity : ComponentActivity() {
                                     "studio" -> com.example.ui.studio.StudioScreen(
                                         themeEngine = appContainer.studioThemeEngine,
                                         layoutManager = appContainer.layoutManager,
+                                        wallpaperEngine = appContainer.wallpaperEngine,
                                         onBack = { currentRouteFlow.value = "launcher" }
                                     )
                                     "safety_security" -> com.example.ui.security.SafetySecurityCenterScreen(
@@ -235,22 +262,19 @@ class LauncherActivity : ComponentActivity() {
                                 }
                             }
 
-                            // 1. App Lock Prompt Dialog
+                            // 1. Interactive App Lock Keypad Dialog (Real Verification & Biometric)
                             val lockedPkg by launcherViewModel.pendingAppLock.collectAsState()
                             if (lockedPkg != null) {
-                                AlertDialog(
-                                    onDismissRequest = { launcherViewModel.dismissPrompts() },
-                                    title = { Text("App Protected by SHIV Lock") },
-                                    text = { Text("Authentication required to launch this application.", style = MaterialTheme.typography.bodyMedium) },
-                                    confirmButton = {
-                                        Button(onClick = { launcherViewModel.unlockAndLaunch(lockedPkg!!) }) {
-                                            Text("Authenticate & Launch")
-                                        }
+                                com.example.ui.security.SecurityPinPromptDialog(
+                                    title = "App Protected by SHIV Lock",
+                                    subtitle = "Enter PIN or Biometrics to launch",
+                                    appLockManager = appContainer.appLockManager,
+                                    onSuccess = {
+                                        val pkg = lockedPkg!!
+                                        launcherViewModel.unlockAndLaunch(pkg)
                                     },
-                                    dismissButton = {
-                                        TextButton(onClick = { launcherViewModel.dismissPrompts() }) {
-                                            Text("Cancel")
-                                        }
+                                    onDismiss = {
+                                        launcherViewModel.dismissPrompts()
                                     }
                                 )
                             }

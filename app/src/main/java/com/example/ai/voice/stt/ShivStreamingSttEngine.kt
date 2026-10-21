@@ -126,30 +126,44 @@ class ShivStreamingSttEngine(
 
     private fun uploadAndTranscribe(wavBytes: BytesArray): String {
         return try {
-            val boundary = "---ShivAIBoundary" + System.currentTimeMillis()
-            val url = URL("$serverBaseUrl/v2/voice/stt")
+            val boundary = "---GroqWhisperBoundary" + System.currentTimeMillis()
+            val url = URL("https://api.groq.com/openai/v1/audio/transcriptions")
             val conn = url.openConnection() as HttpURLConnection
             conn.requestMethod = "POST"
+            val groqKey = com.example.ai.shivai.engine.ShivAIRealEngine.getGroqKey()
+            conn.setRequestProperty("Authorization", "Bearer $groqKey")
+            conn.setRequestProperty("User-Agent", "SHIV-OS/1.0")
             conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
+            conn.connectTimeout = 15000
+            conn.readTimeout = 20000
             conn.doOutput = true
 
             conn.outputStream.use { os ->
+                // Model parameter
+                os.write("--$boundary\r\n".toByteArray())
+                os.write("Content-Disposition: form-data; name=\"model\"\r\n\r\n".toByteArray())
+                os.write("whisper-large-v3-turbo\r\n".toByteArray())
+
+                // File parameter
                 os.write("--$boundary\r\n".toByteArray())
                 os.write("Content-Disposition: form-data; name=\"file\"; filename=\"speech.wav\"\r\n".toByteArray())
                 os.write("Content-Type: audio/wav\r\n\r\n".toByteArray())
                 os.write(wavBytes)
                 os.write("\r\n--$boundary--\r\n".toByteArray())
+                os.flush()
             }
 
             if (conn.responseCode == 200) {
                 val responseText = conn.inputStream.bufferedReader().readText()
                 val json = JSONObject(responseText)
-                json.optString("text", "")
+                json.optString("text", "").trim()
             } else {
+                val err = conn.errorStream?.bufferedReader()?.readText()
+                Logger.e("Groq Whisper error ${conn.responseCode}: $err")
                 ""
             }
         } catch (e: Exception) {
-            Logger.e("Failed to upload audio to STT", e)
+            Logger.e("Failed to upload audio to Groq Whisper STT", e)
             ""
         }
     }

@@ -80,6 +80,62 @@ class AppLockManager(
     private val _lockoutUntilTimestamp = MutableStateFlow(0L)
     val lockoutUntilTimestamp: StateFlow<Long> = _lockoutUntilTimestamp.asStateFlow()
 
+    fun isMasterPinSet(): Boolean {
+        return prefs.getString("master_pin_hash", null)?.isNotBlank() == true
+    }
+
+    fun setMasterPin(pin: String) {
+        val hash = hashCredential(pin)
+        prefs.edit().putString("master_pin_hash", hash).apply()
+        logSecurityEvent("PIN_CONFIGURED", "com.example", "Master Security PIN updated")
+    }
+
+    fun verifyMasterPin(pin: String): Boolean {
+        if (isLockedOut()) return false
+        val storedHash = prefs.getString("master_pin_hash", null) ?: return false
+        val inputHash = hashCredential(pin)
+        val matches = storedHash == inputHash
+        if (matches) {
+            _failedAttempts.value = 0
+            _lockoutUntilTimestamp.value = 0L
+            logSecurityEvent("PIN_VERIFIED", "com.example", "Successful PIN authentication")
+        } else {
+            recordFailedAttempt("PIN_AUTH")
+        }
+        return matches
+    }
+
+    fun isMasterPasswordSet(): Boolean {
+        return prefs.getString("master_password_hash", null)?.isNotBlank() == true
+    }
+
+    fun setMasterPassword(password: String) {
+        val hash = hashCredential(password)
+        prefs.edit().putString("master_password_hash", hash).apply()
+        logSecurityEvent("PASSWORD_CONFIGURED", "com.example", "Master Security Password updated")
+    }
+
+    fun verifyMasterPassword(password: String): Boolean {
+        if (isLockedOut()) return false
+        val storedHash = prefs.getString("master_password_hash", null) ?: return false
+        val inputHash = hashCredential(password)
+        val matches = storedHash == inputHash
+        if (matches) {
+            _failedAttempts.value = 0
+            _lockoutUntilTimestamp.value = 0L
+            logSecurityEvent("PASSWORD_VERIFIED", "com.example", "Successful password authentication")
+        } else {
+            recordFailedAttempt("PASSWORD_AUTH")
+        }
+        return matches
+    }
+
+    private fun hashCredential(credential: String): String {
+        val salt = "SHIV_LOCK_SALT_SECURE_2026"
+        val bytes = java.security.MessageDigest.getInstance("SHA-256").digest((credential + salt).toByteArray(Charsets.UTF_8))
+        return bytes.joinToString("") { "%02x".format(it) }
+    }
+
     private val _securityLogs = MutableStateFlow<List<SecurityLogEvent>>(
         listOf(
             SecurityLogEvent(System.currentTimeMillis() - 3600_000, "SYSTEM_ARMED", "com.example", "SHIV Lock active with biometric authentication"),

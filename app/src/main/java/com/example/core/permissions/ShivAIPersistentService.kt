@@ -26,25 +26,32 @@ class ShivAIPersistentService : Service() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
-        acquirePartialWakeLock()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val notification = createNotification()
-        startForeground(1008, notification)
-        return START_STICKY
+        // Only run briefly if an active task intent was provided, otherwise stop to conserve battery
+        val hasActiveTask = intent?.getBooleanExtra("HAS_ACTIVE_TASK", false) ?: false
+        if (hasActiveTask) {
+            val notification = createNotification()
+            startForeground(1008, notification)
+            return START_NOT_STICKY
+        } else {
+            stopSelf()
+            return START_NOT_STICKY
+        }
     }
 
-    private fun acquirePartialWakeLock() {
-        if (partialWakeLock?.isHeld != true) {
+    fun acquireBriefWakeLock(timeoutMs: Long = 10_000L) {
+        try {
             val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
             partialWakeLock = powerManager?.newWakeLock(
                 PowerManager.PARTIAL_WAKE_LOCK,
-                "ShivAI:PersistentWakeLock"
+                "ShivAI:BriefTaskWakeLock"
             )?.apply {
-                setReferenceCounted(false)
-                acquire(24 * 60 * 60 * 1000L) // 24 hours
+                acquire(timeoutMs)
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 

@@ -93,7 +93,7 @@ fun OnboardingScreen(
                             layoutManager?.applyProfile(selectedProfile)
                             themeEngine?.applyPreset(selectedThemePreset)
                             themeEngine?.setIconShape(selectedIconShape)
-                            onComplete()
+                            stage = OnboardingStage.AUTH_SCREEN
                         }
                     )
                 }
@@ -117,7 +117,8 @@ fun OnboardingScreen(
                             layoutManager?.applyProfile(selectedProfile)
                             themeEngine?.applyPreset(selectedThemePreset)
                             themeEngine?.setIconShape(selectedIconShape)
-                            onComplete()
+                            // Require authentication before entering launcher
+                            stage = OnboardingStage.AUTH_SCREEN
                         }
                     )
                 }
@@ -271,8 +272,18 @@ fun WelcomeCarouselScreen(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Welcome to SHIV Launcher", fontWeight = FontWeight.Bold, color = TextPrimary)
             }
-            TextButton(onClick = onSkip) {
-                Text("Skip", color = TextSecondary)
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = ShivTheme.colors.primary.copy(alpha = 0.15f)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Shield, contentDescription = null, tint = ShivTheme.colors.primary, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Protected", style = MaterialTheme.typography.labelSmall, color = ShivTheme.colors.primary, fontWeight = FontWeight.SemiBold)
+                }
             }
         }
 

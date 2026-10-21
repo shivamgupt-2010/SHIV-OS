@@ -103,25 +103,28 @@ fun ChatScreen(
                                 TrishulIcon(size = 22.dp)
                                 Spacer(modifier = Modifier.width(8.dp))
 
-                                // Agent Selector Pill
+                                // ShivAI Intelligence Core Badge
                                 Surface(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .clickable { showAgentSelector = true },
+                                    modifier = Modifier.clip(RoundedCornerShape(12.dp)),
                                     color = ShivTheme.colors.surfaceVariant,
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, ShivTheme.colors.primary.copy(alpha = 0.4f))
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, ShivTheme.colors.primary.copy(alpha = 0.5f))
                                 ) {
                                     Row(
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(8.dp)
+                                                .clip(CircleShape)
+                                                .background(ShivTheme.colors.primary)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
                                         Text(
-                                            text = availableAgents.firstOrNull { it.first == activeAgent }?.second?.substringBefore(' ') ?: "ShivAI",
+                                            text = "ShivAI Cognitive Core",
                                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                                             color = ShivTheme.colors.primary
                                         )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Icon(Icons.Default.ArrowDropDown, contentDescription = "Select Agent", tint = ShivTheme.colors.primary, modifier = Modifier.size(16.dp))
                                     }
                                 }
                             }
@@ -159,22 +162,6 @@ fun ChatScreen(
                                         )
                                     }
                                 }
-                            }
-                        }
-
-                        // Agent Selection Dropdown
-                        DropdownMenu(
-                            expanded = showAgentSelector,
-                            onDismissRequest = { showAgentSelector = false }
-                        ) {
-                            availableAgents.forEach { (tag, label) ->
-                                DropdownMenuItem(
-                                    text = { Text(label, color = if (tag == activeAgent) ShivaCyan else TextPrimary) },
-                                    onClick = {
-                                        viewModel.selectAgent(tag)
-                                        showAgentSelector = false
-                                    }
-                                )
                             }
                         }
                     }
@@ -249,10 +236,15 @@ fun ChatScreen(
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
                                         text = when (val a = pendingAction!!) {
-                                            is ShivAIAction.ApplyTheme -> "Apply theme preset: ${a.presetKey} (${a.reason})"
+                                            is ShivAIAction.CreateWebsite -> "Create Website: ${a.title} • ${a.summary}"
+                                            is ShivAIAction.GenerateVideo -> "Generate Video: ${a.summary}"
+                                            is ShivAIAction.InstallApp -> "Install App: ${a.appName} • ${a.summary}"
+                                            is ShivAIAction.ReplyChat -> "Send Reply: ${a.summary} • '${a.messageText}'"
+                                            is ShivAIAction.AutomateTask -> "Automate Task: ${a.summary}"
+                                            is ShivAIAction.ApplyTheme -> "Apply Theme: ${a.presetKey} (${a.reason})"
                                             is ShivAIAction.StartFocusSession -> "Start Focus Session: ${a.minutes} minutes"
                                             is ShivAIAction.ProposeLayout -> "Optimize home grid layout with ${a.recommendedApps.size} apps"
-                                            else -> "Execute proposed launcher configuration?"
+                                            else -> "Execute proposed action upon your approval?"
                                         },
                                         style = MaterialTheme.typography.bodySmall,
                                         color = ShivTheme.colors.textPrimary
@@ -260,14 +252,14 @@ fun ChatScreen(
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
                                         TextButton(onClick = { viewModel.dismissAction() }) {
-                                            Text("Dismiss", color = ShivTheme.colors.textSecondary)
+                                            Text("Cancel", color = ShivTheme.colors.textSecondary)
                                         }
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Button(
                                             onClick = { viewModel.confirmAction(pendingAction!!) },
                                             colors = ButtonDefaults.buttonColors(containerColor = ShivTheme.colors.primary)
                                         ) {
-                                            Text("Apply Action", color = if (ShivTheme.isDark) Color.Black else Color.White, fontWeight = FontWeight.Bold)
+                                            Text("Approve & Execute", color = if (ShivTheme.isDark) Color.Black else Color.White, fontWeight = FontWeight.Bold)
                                         }
                                     }
                                 }

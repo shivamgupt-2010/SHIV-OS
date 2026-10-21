@@ -152,8 +152,16 @@ class AppContainer(private val context: Context) {
         com.example.core.studio.StudioThemeEngine(appDatabase.launcherThemeDao(), appScope)
     }
 
+    val wallpaperEngine: com.example.core.studio.WallpaperEngine by lazy {
+        com.example.core.studio.WallpaperEngine(context)
+    }
+
     val appLockManager: com.example.core.lock.AppLockManager by lazy {
         com.example.core.lock.AppLockManager(context, appDatabase.appLockDao(), appScope)
+    }
+
+    val userProfileManager: com.example.core.identity.UserProfileManager by lazy {
+        com.example.core.identity.UserProfileManager(context)
     }
 
     val wellbeingManager: com.example.core.wellbeing.WellbeingManager by lazy {
@@ -169,7 +177,7 @@ class AppContainer(private val context: Context) {
     }
 
     val shivAIActionDispatcher: com.example.core.ai.ShivAIActionDispatcher by lazy {
-        com.example.core.ai.ShivAIActionDispatcher(studioThemeEngine, layoutManager, appLockManager, wellbeingManager, familyManager, launcherShellManager)
+        com.example.core.ai.ShivAIActionDispatcher(context, studioThemeEngine, layoutManager, appLockManager, wellbeingManager, familyManager, launcherShellManager)
     }
 
     // Repositories
@@ -371,7 +379,11 @@ class AppContainer(private val context: Context) {
         com.example.ai.state.AIStateManager()
     }
 
+    val shivAIRealEngine: com.example.ai.shivai.engine.ShivAIRealEngine by lazy {
+        com.example.ai.shivai.engine.ShivAIRealEngine(context)
+    }
+
     val centralOrchestrator: com.example.ai.orchestrator.CentralOrchestrator by lazy {
-        com.example.ai.orchestrator.CentralOrchestrator(chatAgent, studyAgent, codingAgent, aiStateManager, toolExecutionManager, shivAIClient)
+        com.example.ai.orchestrator.CentralOrchestrator(chatAgent, studyAgent, codingAgent, aiStateManager, toolExecutionManager, shivAIClient, shivAIRealEngine)
     }
 }

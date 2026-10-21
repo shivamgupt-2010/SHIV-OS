@@ -24,12 +24,28 @@ import androidx.compose.ui.unit.sp
 import com.example.ui.components.TrishulIcon
 import com.example.ui.theme.*
 
+import android.graphics.BitmapFactory
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.window.Dialog
+import java.io.File
+import java.io.FileOutputStream
+
 @Composable
 fun SidebarDrawer(
     currentRoute: String,
     onNavigate: (String) -> Unit,
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    userProfileManager: com.example.core.identity.UserProfileManager? = null
 ) {
+    val profile = userProfileManager?.profile?.collectAsState()?.value 
+        ?: com.example.core.identity.UserProfile()
+    var showEditProfileDialog by remember { mutableStateOf(false) }
     ModalDrawerSheet(
         modifier = Modifier.width(310.dp),
         drawerContainerColor = ShivTheme.colors.surface,
@@ -76,9 +92,12 @@ fun SidebarDrawer(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // User Profile Card
+            // Dynamic User Profile Card with Photo Setup
             Surface(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(ShivTheme.cardRadius))
+                    .clickable { showEditProfileDialog = true },
                 shape = RoundedCornerShape(ShivTheme.cardRadius),
                 color = ShivTheme.colors.surfaceVariant,
                 border = androidx.compose.foundation.BorderStroke(1.dp, ShivTheme.colors.cardBorder)
@@ -87,33 +106,80 @@ fun SidebarDrawer(
                     modifier = Modifier.padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(46.dp)
-                            .clip(CircleShape)
-                            .background(
-                                Brush.linearGradient(
-                                    listOf(ShivTheme.colors.primary, ShivTheme.colors.accent)
-                                )
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Default.Person, contentDescription = null, tint = Color.White)
+                    val photoBitmap = remember(profile.photoUri) {
+                        if (!profile.photoUri.isNullOrBlank()) {
+                            try {
+                                BitmapFactory.decodeFile(profile.photoUri)
+                            } catch (e: Exception) {
+                                null
+                            }
+                        } else null
                     }
+
+                    if (photoBitmap != null) {
+                        Image(
+                            bitmap = photoBitmap.asImageBitmap(),
+                            contentDescription = "Profile Photo",
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    Brush.linearGradient(
+                                        listOf(ShivTheme.colors.primary, ShivTheme.colors.accent)
+                                    )
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = profile.displayName.firstOrNull()?.uppercase() ?: "S",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                color = Color.White
+                            )
+                        }
+                    }
+
                     Spacer(modifier = Modifier.width(14.dp))
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Shivam Gupta",
+                            text = profile.displayName,
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                            color = ShivTheme.colors.textPrimary
+                            color = ShivTheme.colors.textPrimary,
+                            maxLines = 1
                         )
                         Text(
-                            text = "Creator • Builder • Dreamer",
+                            text = profile.bio,
                             style = MaterialTheme.typography.bodySmall,
-                            color = ShivTheme.colors.textSecondary
+                            color = ShivTheme.colors.textSecondary,
+                            maxLines = 1
                         )
                     }
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit Profile",
+                        tint = ShivTheme.colors.textSecondary,
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
+            }
+
+            if (showEditProfileDialog) {
+                EditProfileDialog(
+                    initialName = profile.displayName,
+                    initialBio = profile.bio,
+                    initialPhotoUri = profile.photoUri,
+                    onSave = { name, bio, photoUri ->
+                        userProfileManager?.updateProfile(name, bio, photoUri)
+                        showEditProfileDialog = false
+                    },
+                    onDismiss = { showEditProfileDialog = false }
+                )
             }
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -294,6 +360,149 @@ private fun EcosystemItem(
                 style = MaterialTheme.typography.bodySmall,
                 color = ShivTheme.colors.textSecondary
             )
+        }
+    }
+}
+
+@Composable
+fun EditProfileDialog(
+    initialName: String,
+    initialBio: String,
+    initialPhotoUri: String?,
+    onSave: (String, String, String?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var name by remember { mutableStateOf(initialName) }
+    var bio by remember { mutableStateOf(initialBio) }
+    var photoUri by remember { mutableStateOf(initialPhotoUri) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            try {
+                val inputStream = context.contentResolver.openInputStream(uri)
+                val profilesDir = File(context.filesDir, "profiles").apply { mkdirs() }
+                val photoFile = File(profilesDir, "avatar_${System.currentTimeMillis()}.jpg")
+                FileOutputStream(photoFile).use { out ->
+                    inputStream?.copyTo(out)
+                }
+                inputStream?.close()
+                photoUri = photoFile.absolutePath
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = ShivTheme.colors.surface,
+            tonalElevation = 8.dp,
+            modifier = Modifier.fillMaxWidth(0.95f)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Edit Profile",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = ShivTheme.colors.textPrimary
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Photo Avatar Picker
+                val photoBitmap = remember(photoUri) {
+                    if (!photoUri.isNullOrBlank()) {
+                        try {
+                            BitmapFactory.decodeFile(photoUri)
+                        } catch (e: Exception) {
+                            null
+                        }
+                    } else null
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(CircleShape)
+                        .background(ShivTheme.colors.surfaceVariant)
+                        .clickable { galleryLauncher.launch("image/*") },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (photoBitmap != null) {
+                        Image(
+                            bitmap = photoBitmap.asImageBitmap(),
+                            contentDescription = "Avatar",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(
+                            Icons.Default.AddAPhoto,
+                            contentDescription = "Add Photo",
+                            tint = ShivTheme.colors.primary,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                Row {
+                    TextButton(onClick = { galleryLauncher.launch("image/*") }) {
+                        Text("Choose Photo", color = ShivTheme.colors.primary)
+                    }
+                    if (photoUri != null) {
+                        TextButton(onClick = { photoUri = null }) {
+                            Text("Remove", color = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Display Name") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = bio,
+                    onValueChange = { bio = it },
+                    label = { Text("Bio / Status") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancel", color = ShivTheme.colors.textSecondary)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = { onSave(name, bio, photoUri) },
+                        colors = ButtonDefaults.buttonColors(containerColor = ShivTheme.colors.primary)
+                    ) {
+                        Text("Save Profile", color = Color.White)
+                    }
+                }
+            }
         }
     }
 }

@@ -34,56 +34,42 @@ class ShivAIAccessibilityService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        if (event == null) return
+        // Zero background processing when user is interacting with apps.
+        // We do NOT take continuous screenshots or run OCR on window changes.
+        // Screen capture and analysis are strictly on-demand when requested by user or ShivAI.
+    }
 
-        val rootNode = rootInActiveWindow
-        val packageName = event.packageName?.toString() ?: "unknown"
+    /**
+     * Captures screen on-demand only when ShivAI or the user explicitly requests screen analysis.
+     */
+    fun captureScreenOnDemand(onComplete: (Bitmap?) -> Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                takeScreenshot(
+                    android.view.Display.DEFAULT_DISPLAY,
+                    applicationContext.mainExecutor,
+                    object : TakeScreenshotCallback {
+                        override fun onSuccess(screenshotResult: ScreenshotResult) {
+                            val hwBuffer = screenshotResult.hardwareBuffer
+                            val colorSpace = screenshotResult.colorSpace
+                            val bitmap = Bitmap.wrapHardwareBuffer(hwBuffer, colorSpace)
+                            val softwareBitmap = bitmap?.copy(Bitmap.Config.ARGB_8888, false)
+                            hwBuffer.close()
+                            onComplete(softwareBitmap ?: bitmap)
+                        }
 
-        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED ||
-            event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
-            
-            val currentTime = System.currentTimeMillis()
-            if (currentTime - lastEventTime > 500) { // 500ms debounce
-                lastEventTime = currentTime
-                
-                scope.launch {
-                    try {
-                        ScreenIntelligence.engine.analyzeScreen(rootNode, packageName)
-                    } catch (e: Exception) {
-                        Logger.e("Accessibility Analysis Error", e)
+                        override fun onFailure(errorCode: Int) {
+                            Logger.e("On-demand screenshot failed with code: $errorCode")
+                            onComplete(null)
+                        }
                     }
-                }
-                
-                // Trigger Visual Intelligence (OCR)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    try {
-                        takeScreenshot(
-                            android.view.Display.DEFAULT_DISPLAY,
-                            applicationContext.mainExecutor,
-                            object : TakeScreenshotCallback {
-                                override fun onSuccess(screenshotResult: ScreenshotResult) {
-                                    val hwBuffer = screenshotResult.hardwareBuffer
-                                    val colorSpace = screenshotResult.colorSpace
-                                    val bitmap = Bitmap.wrapHardwareBuffer(hwBuffer, colorSpace)
-                                    bitmap?.let {
-                                        // Hardware bitmaps can cause issues with ML Kit and need copy
-                                        val softwareBitmap = it.copy(Bitmap.Config.ARGB_8888, false)
-                                        val appContainer = (applicationContext as ShivAiApplication).container
-                                        appContainer.ocrIntelligenceEngine.processScreenshot(softwareBitmap ?: it)
-                                    }
-                                    hwBuffer.close()
-                                }
-
-                                override fun onFailure(errorCode: Int) {
-                                    Logger.e("Screenshot failed with code: \$errorCode")
-                                }
-                            }
-                        )
-                    } catch (e: Exception) {
-                        Logger.e("Failed to request screenshot", e)
-                    }
-                }
+                )
+            } catch (e: Exception) {
+                Logger.e("Failed to request on-demand screenshot", e)
+                onComplete(null)
             }
+        } else {
+            onComplete(null)
         }
     }
 

@@ -153,8 +153,9 @@ fun ShivOSLiteLauncherScreen(
                 )
             }
     ) {
-        // Dynamic Cosmic Background
-        CosmicBackground(showSilhouette = false)
+        // Dynamic Wallpaper Engine View (Presets, Gradients, System, or Custom Photo)
+        val currentWallpaper by viewModel.currentWallpaper.collectAsState()
+        com.example.core.studio.LauncherWallpaperView(config = currentWallpaper)
 
         Scaffold(
             containerColor = Color.Transparent,
@@ -253,29 +254,149 @@ fun ShivOSLiteLauncherScreen(
             ) {
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Beautiful Minimalist Live Clock Header
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.scale(glowScale)
-                ) {
-                    Text(
-                        text = if (currentTime.isNotEmpty()) currentTime else "07:30",
-                        style = MaterialTheme.typography.displayLarge.copy(
-                            fontSize = if (activeComplexity == ComplexityMode.SIMPLE) 72.sp else 62.sp,
-                            fontWeight = FontWeight.Light,
-                            letterSpacing = (-2).sp
-                        ),
-                        color = ShivTheme.colors.textPrimary
-                    )
-                    Text(
-                        text = if (currentDate.isNotEmpty()) currentDate else "Monday, September 14",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 15.sp,
-                            letterSpacing = 0.5.sp
-                        ),
-                        color = ShivTheme.colors.primary.copy(alpha = 0.9f)
-                    )
+                // Dynamic Morphing Clock Header based on active Theme & Profile Metamorphosis
+                val presetKey = currentTheme.themePreset.uppercase()
+                val isMinimalStyle = presetKey.contains("MINIMAL") || presetKey.contains("LIGHT") || presetKey.contains("PAPER") || presetKey.contains("MONOCHROME")
+                val isExecutiveStyle = presetKey.contains("OLED") || presetKey.contains("GRAPHITE") || presetKey.contains("STUDIO_DARK") || presetKey.contains("AMOLED") || presetKey.contains("MIDNIGHT")
+                val isExpressiveStyle = presetKey.contains("POP") || presetKey.contains("NEON") || presetKey.contains("GOLD") || presetKey.contains("SUNSET") || presetKey.contains("OCEAN")
+
+                val timeParts = (if (currentTime.isNotEmpty()) currentTime else "07:30").split(":")
+                val hours = timeParts.getOrNull(0) ?: "07"
+                val minutes = timeParts.getOrNull(1) ?: "30"
+                val dateText = if (currentDate.isNotEmpty()) currentDate else "Monday, September 14"
+
+                when {
+                    isMinimalStyle -> {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .width(4.dp)
+                                    .height(60.dp)
+                                    .clip(RoundedCornerShape(2.dp))
+                                    .background(ShivTheme.colors.primary)
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column {
+                                Text(
+                                    text = "$hours:$minutes",
+                                    style = MaterialTheme.typography.displayLarge.copy(
+                                        fontSize = 54.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = (-1).sp
+                                    ),
+                                    color = ShivTheme.colors.textPrimary
+                                )
+                                Text(
+                                    text = dateText,
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                                    color = ShivTheme.colors.primary
+                                )
+                            }
+                        }
+                    }
+                    isExecutiveStyle -> {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(18.dp)),
+                            color = ShivTheme.colors.surfaceVariant.copy(alpha = 0.8f),
+                            border = BorderStroke(1.dp, ShivTheme.colors.cardBorder)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(18.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text(
+                                        text = "$hours:$minutes",
+                                        style = MaterialTheme.typography.displayMedium.copy(
+                                            fontSize = 46.sp,
+                                            fontWeight = FontWeight.SemiBold
+                                        ),
+                                        color = ShivTheme.colors.textPrimary
+                                    )
+                                    Text(
+                                        text = dateText,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = ShivTheme.colors.textSecondary
+                                    )
+                                }
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = ShivTheme.colors.primary.copy(alpha = 0.15f),
+                                    border = BorderStroke(1.dp, ShivTheme.colors.primary.copy(alpha = 0.4f))
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(Icons.Default.Bolt, contentDescription = null, tint = ShivTheme.colors.primary, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Optimal", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = ShivTheme.colors.primary)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    isExpressiveStyle -> {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.scale(glowScale)
+                        ) {
+                            Text(
+                                text = "$hours:$minutes",
+                                style = MaterialTheme.typography.displayLarge.copy(
+                                    fontSize = 74.sp,
+                                    fontWeight = FontWeight.Black,
+                                    letterSpacing = (-3).sp
+                                ),
+                                color = ShivTheme.colors.primary
+                            )
+                            Surface(
+                                shape = RoundedCornerShape(14.dp),
+                                color = ShivTheme.colors.accent.copy(alpha = 0.2f),
+                                border = BorderStroke(1.dp, ShivTheme.colors.accent.copy(alpha = 0.5f))
+                            ) {
+                                Text(
+                                    text = dateText,
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = ShivTheme.colors.accent,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+                    }
+                    else -> {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.scale(glowScale)
+                        ) {
+                            Text(
+                                text = "$hours:$minutes",
+                                style = MaterialTheme.typography.displayLarge.copy(
+                                    fontSize = if (activeComplexity == ComplexityMode.SIMPLE) 72.sp else 62.sp,
+                                    fontWeight = FontWeight.Light,
+                                    letterSpacing = (-2).sp
+                                ),
+                                color = ShivTheme.colors.textPrimary
+                            )
+                            Text(
+                                text = dateText,
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Medium,
+                                    fontSize = 15.sp,
+                                    letterSpacing = 0.5.sp
+                                ),
+                                color = ShivTheme.colors.primary.copy(alpha = 0.9f)
+                            )
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))

@@ -139,7 +139,7 @@ fun SafetySecurityCenterScreen(
                 // Section Body
                 Box(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 12.dp)) {
                     when (selectedSection) {
-                        SafetySection.PARENTAL -> ParentalControlsTab(familyManager, installedApps)
+                        SafetySection.PARENTAL -> ParentalControlsTab(familyManager, appLockManager, installedApps)
                         SafetySection.LOCK -> ShivLockTab(appLockManager, installedApps)
                         SafetySection.WELLBEING -> DigitalWellbeingTab(wellbeingManager, installedApps)
                         SafetySection.SECURITY -> SecurityCenterTab(appLockManager, familyManager)
@@ -155,7 +155,11 @@ fun SafetySecurityCenterScreen(
 // 1. PARENTAL CONTROLS SECTION
 // =========================================================================================
 @Composable
-fun ParentalControlsTab(familyManager: FamilyManager, installedApps: List<AppInfo>) {
+fun ParentalControlsTab(
+    familyManager: FamilyManager,
+    appLockManager: AppLockManager,
+    installedApps: List<AppInfo>
+) {
     val context = LocalContext.current
     val policy by familyManager.policy.collectAsState()
     val restrictions by familyManager.contentRestrictions.collectAsState()
@@ -184,26 +188,30 @@ fun ParentalControlsTab(familyManager: FamilyManager, installedApps: List<AppInf
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Sub-tabs row
+        // Sub-tabs row (Scrollable horizontally to avoid clipping or wrapping)
         Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(bottom = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             subTabs.forEachIndexed { idx, label ->
                 val isSelected = parentSubTab == idx
                 Surface(
                     modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(10.dp))
+                        .clip(RoundedCornerShape(12.dp))
                         .clickable { parentSubTab = idx },
                     color = if (isSelected) ShivTheme.colors.primary.copy(alpha = 0.25f) else ShivTheme.colors.surfaceVariant.copy(alpha = 0.5f),
                     border = BorderStroke(1.dp, if (isSelected) ShivTheme.colors.primary else ShivTheme.colors.cardBorder.copy(alpha = 0.3f))
                 ) {
                     Text(
                         text = label,
-                        modifier = Modifier.padding(vertical = 8.dp),
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal),
                         color = if (isSelected) ShivTheme.colors.primary else ShivTheme.colors.textSecondary,
+                        maxLines = 1,
+                        softWrap = false,
                         textAlign = TextAlign.Center
                     )
                 }
@@ -752,65 +760,29 @@ fun ParentalControlsTab(familyManager: FamilyManager, installedApps: List<AppInf
         )
     }
 
-    // Set PIN dialog
+    // Interactive Keypad Setup PIN dialog
     if (showSetPinDialog) {
-        AlertDialog(
-            onDismissRequest = { showSetPinDialog = false },
-            title = { Text("Create Parent Security PIN") },
-            text = {
-                OutlinedTextField(
-                    value = newPinText,
-                    onValueChange = { if (it.length <= 8) newPinText = it },
-                    label = { Text("4–8 Digit PIN") },
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                    singleLine = true
-                )
+        SecurityPinCreationDialog(
+            appLockManager = appLockManager,
+            onPinCreated = {
+                showSetPinDialog = false
+                Toast.makeText(context, "Parent Security PIN configured successfully", Toast.LENGTH_SHORT).show()
             },
-            confirmButton = {
-                Button(onClick = {
-                    if (newPinText.length in 4..8) {
-                        familyManager.setParentPin(newPinText)
-                        showSetPinDialog = false
-                        Toast.makeText(context, "Parent PIN configured securely", Toast.LENGTH_SHORT).show()
-                    }
-                }) { Text("Save PIN") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showSetPinDialog = false }) { Text("Cancel") }
-            }
+            onDismiss = { showSetPinDialog = false }
         )
     }
 
-    // Verify PIN dialog
+    // Interactive Keypad Verify PIN dialog
     if (showPinDialog) {
-        AlertDialog(
-            onDismissRequest = { showPinDialog = false },
-            title = { Text("Enter Parent PIN") },
-            text = {
-                OutlinedTextField(
-                    value = enteredPin,
-                    onValueChange = { enteredPin = it },
-                    label = { Text("Security PIN") },
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                    singleLine = true
-                )
+        SecurityPinPromptDialog(
+            title = "Parent Authorization Required",
+            subtitle = "Enter Security PIN to modify restrictions",
+            appLockManager = appLockManager,
+            onSuccess = {
+                showPinDialog = false
+                pinAction?.invoke()
             },
-            confirmButton = {
-                Button(onClick = {
-                    if (familyManager.verifyParentPin(enteredPin)) {
-                        showPinDialog = false
-                        pinAction?.invoke()
-                        enteredPin = ""
-                    } else {
-                        Toast.makeText(context, "Incorrect PIN", Toast.LENGTH_SHORT).show()
-                    }
-                }) { Text("Verify") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showPinDialog = false; enteredPin = "" }) { Text("Cancel") }
-            }
+            onDismiss = { showPinDialog = false }
         )
     }
 }
@@ -832,6 +804,7 @@ fun ShivLockTab(appLockManager: AppLockManager, installedApps: List<AppInfo>) {
 
     var lockSubTab by remember { mutableIntStateOf(0) }
     val lockSubTabs = listOf("Lock Methods", "App Manager", "Customization", "Protection")
+    var showCreatePinDialog by remember { mutableStateOf(false) }
 
     var searchQuery by remember { mutableStateOf("") }
     val filteredApps = remember(installedApps, searchQuery) {
@@ -841,24 +814,28 @@ fun ShivLockTab(appLockManager: AppLockManager, installedApps: List<AppInfo>) {
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(bottom = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             lockSubTabs.forEachIndexed { idx, label ->
                 val isSelected = lockSubTab == idx
                 Surface(
                     modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(10.dp))
+                        .clip(RoundedCornerShape(12.dp))
                         .clickable { lockSubTab = idx },
                     color = if (isSelected) ShivTheme.colors.primary.copy(alpha = 0.25f) else ShivTheme.colors.surfaceVariant.copy(alpha = 0.5f),
                     border = BorderStroke(1.dp, if (isSelected) ShivTheme.colors.primary else ShivTheme.colors.cardBorder.copy(alpha = 0.3f))
                 ) {
                     Text(
                         text = label,
-                        modifier = Modifier.padding(vertical = 8.dp),
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal),
                         color = if (isSelected) ShivTheme.colors.primary else ShivTheme.colors.textSecondary,
+                        maxLines = 1,
+                        softWrap = false,
                         textAlign = TextAlign.Center
                     )
                 }
@@ -920,6 +897,54 @@ fun ShivLockTab(appLockManager: AppLockManager, installedApps: List<AppInfo>) {
                                 }
                             }
                         }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Master Security PIN Configuration Card
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .clickable { showCreatePinDialog = true },
+                        color = ShivTheme.colors.primary.copy(alpha = 0.12f),
+                        shape = RoundedCornerShape(14.dp),
+                        border = BorderStroke(1.dp, ShivTheme.colors.primary.copy(alpha = 0.4f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.VpnKey, contentDescription = null, tint = ShivTheme.colors.primary, modifier = Modifier.size(22.dp))
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(
+                                        text = if (appLockManager.isMasterPinSet()) "Change Master Security PIN" else "Set Master Security PIN",
+                                        fontWeight = FontWeight.Bold,
+                                        color = ShivTheme.colors.textPrimary
+                                    )
+                                    Text(
+                                        text = if (appLockManager.isMasterPinSet()) "PIN is active & verified with SHA-256" else "Create a 4–8 digit PIN with numeric keypad",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = ShivTheme.colors.textSecondary
+                                    )
+                                }
+                            }
+                            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = ShivTheme.colors.primary)
+                        }
+                    }
+
+                    if (showCreatePinDialog) {
+                        SecurityPinCreationDialog(
+                            appLockManager = appLockManager,
+                            onPinCreated = {
+                                showCreatePinDialog = false
+                                Toast.makeText(context, "Master Security PIN saved successfully", Toast.LENGTH_SHORT).show()
+                            },
+                            onDismiss = { showCreatePinDialog = false }
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(18.dp))

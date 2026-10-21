@@ -66,6 +66,9 @@ class ChatViewModel(
 
     init {
         loadHistory(_currentSessionId.value)
+        voiceSessionManager.onTranscriptionComplete = { query ->
+            sendMessage(query)
+        }
     }
 
     fun selectAgent(agentTag: String) {
@@ -213,12 +216,27 @@ class ChatViewModel(
                     }
                 }
 
-                _messages.update { current ->
-                    current.map { if (it.id == tempId) it.copy(isStreaming = false) else it }
+                // Stream finished - parse any structured action for user approval
+                var displayText = currentText
+                var parsedAction: ShivAIAction? = null
+                if (actionDispatcher != null) {
+                    val (clean, act) = actionDispatcher.parseActionFromText(currentText)
+                    displayText = clean
+                    parsedAction = act
+                    if (act != null) {
+                        _pendingActionConfirmation.value = act
+                    }
                 }
 
-                // Stream finished, persist to Room DB
-                val finalMsg = ChatHistoryEntity(id = tempId, sessionId = session, role = "agent", content = currentText)
+                _messages.update { current ->
+                    current.map { 
+                        if (it.id == tempId) it.copy(content = displayText, isStreaming = false, proposedAction = parsedAction) 
+                        else it 
+                    }
+                }
+
+                // Stream finished, persist clean message to Room DB
+                val finalMsg = ChatHistoryEntity(id = tempId, sessionId = session, role = "agent", content = displayText)
                 chatHistoryDao.insertMessage(finalMsg)
             } catch (e: Exception) {
                 _messages.update { current ->
@@ -229,10 +247,15 @@ class ChatViewModel(
     }
 
     fun confirmAction(action: ShivAIAction) {
-        actionDispatcher?.executeAction(action, isUserConfirmed = true)
+        val success = actionDispatcher?.executeAction(action, isUserConfirmed = true) ?: false
         _pendingActionConfirmation.value = null
+        val feedback = if (success) "Action executed successfully upon your approval." else "Action failed or was restricted by device security."
+        val confirmId = UUID.randomUUID().toString()
         _messages.update { current ->
-            current + ChatMessage(role = "system", content = "Action applied successfully.")
+            current + ChatMessage(id = confirmId, role = "system", content = feedback)
+        }
+        viewModelScope.launch {
+            chatHistoryDao.insertMessage(ChatHistoryEntity(id = confirmId, sessionId = _currentSessionId.value, role = "system", content = feedback))
         }
     }
 

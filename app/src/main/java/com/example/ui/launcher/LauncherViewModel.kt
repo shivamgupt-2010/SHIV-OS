@@ -25,8 +25,12 @@ class LauncherViewModel(
     val studioThemeEngine: StudioThemeEngine? = null,
     val appLockManager: AppLockManager? = null,
     val wellbeingManager: WellbeingManager? = null,
-    val familyManager: FamilyManager? = null
+    val familyManager: FamilyManager? = null,
+    val wallpaperEngine: com.example.core.studio.WallpaperEngine? = null
 ) : ViewModel() {
+
+    val currentWallpaper: StateFlow<com.example.core.studio.WallpaperConfig> = wallpaperEngine?.currentWallpaper
+        ?: MutableStateFlow(com.example.core.studio.WallpaperConfig())
 
     val installedApps = launcherShellManager.installedApps.stateIn(
         viewModelScope,

@@ -30,6 +30,8 @@ class VoiceSessionManager(
     private val audioResourceManager: AudioResourceManager,
     private val orchestrator: CentralOrchestrator
 ) {
+    var onTranscriptionComplete: ((String) -> Unit)? = null
+
     private val _state = MutableStateFlow(VoiceSessionState.IDLE)
     val state: StateFlow<VoiceSessionState> = _state.asStateFlow()
 
@@ -80,7 +82,10 @@ class VoiceSessionManager(
                     }
                     is SttResult.Final -> {
                         if (result.text.isNotBlank()) {
-                            processUserQuery(result.text)
+                            val text = result.text.trim()
+                            Logger.d("Voice query transcribed: $text")
+                            endSession()
+                            onTranscriptionComplete?.invoke(text) ?: processUserQuery(text)
                         } else {
                             // Empty transcription, revert to idle or listen again
                             Logger.d("Empty STT result")

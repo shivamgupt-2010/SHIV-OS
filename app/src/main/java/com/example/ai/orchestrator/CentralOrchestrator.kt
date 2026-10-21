@@ -22,7 +22,8 @@ class CentralOrchestrator(
     private val codingAgent: com.example.ai.agent.CodingAgent,
     private val stateManager: com.example.ai.state.AIStateManager,
     private val toolExecutionManager: ToolExecutionManager,
-    private val shivAIClient: com.example.ai.shivai.client.ShivAIClient? = null
+    private val shivAIClient: com.example.ai.shivai.client.ShivAIClient? = null,
+    private val realEngine: com.example.ai.shivai.engine.ShivAIRealEngine? = null
 ) {
     /**
      * Determines which agent is best suited for the task.
@@ -39,6 +40,9 @@ class CentralOrchestrator(
     }
 
     suspend fun processTask(prompt: String, sessionId: String): Result<String> {
+        if (realEngine != null) {
+            return realEngine.chat(prompt)
+        }
         stateManager.updateState(status = com.example.ai.state.ExecutionStatus.ANALYZING_INTENT)
         val agent = routeIntent(prompt)
         Logger.d("Orchestrator routed task to: ${agent.name}")
@@ -105,6 +109,9 @@ class CentralOrchestrator(
     }
     
     suspend fun processTaskStream(prompt: String, sessionId: String): Flow<Result<String>> {
+         if (realEngine != null) {
+             return realEngine.chatStream(prompt)
+         }
          val agent = routeIntent(prompt)
          Logger.d("Orchestrator stream routed task to: ${agent.name}")
          if (shivAIClient != null) {
