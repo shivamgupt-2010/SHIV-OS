@@ -29,16 +29,19 @@ class ShivAIPersistentService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // Only run briefly if an active task intent was provided, otherwise stop to conserve battery
+        val notification = createNotification()
+        startForeground(1008, notification)
         val hasActiveTask = intent?.getBooleanExtra("HAS_ACTIVE_TASK", false) ?: false
-        if (hasActiveTask) {
-            val notification = createNotification()
-            startForeground(1008, notification)
-            return START_NOT_STICKY
-        } else {
+        if (!hasActiveTask) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+            } else {
+                @Suppress("DEPRECATION")
+                stopForeground(true)
+            }
             stopSelf()
-            return START_NOT_STICKY
         }
+        return START_NOT_STICKY
     }
 
     fun acquireBriefWakeLock(timeoutMs: Long = 10_000L) {

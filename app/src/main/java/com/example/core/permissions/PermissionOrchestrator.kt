@@ -61,18 +61,7 @@ class PermissionOrchestrator(private val context: Context) {
             else -> AIReadinessState.RESTRICTED_MODE
         }
         
-        if (health.hasRecordAudio && health.hasContacts && health.hasCalendar && health.hasExternalStorage) {
-            try {
-                val intent = Intent(context, ShivAIPersistentService::class.java)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    context.startForegroundService(intent)
-                } else {
-                    context.startService(intent)
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
+        // No background persistent service auto-start to preserve battery and respect zero background policy
     }
 
     private fun checkPermission(permission: String): Boolean {

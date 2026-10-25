@@ -32,16 +32,7 @@ class LauncherActivity : ComponentActivity() {
         handleAuthRedirect(intent)
         enableEdgeToEdge()
 
-        try {
-            val serviceIntent = Intent(this, com.example.core.permissions.ShivAIPersistentService::class.java)
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                startForegroundService(serviceIntent)
-            } else {
-                startService(serviceIntent)
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        // Do not run background persistent service on launcher launch to prevent battery drain and crashes
 
         intent?.getStringExtra("EXTRA_TARGET_SCREEN")?.let {
             currentRouteFlow.value = it
