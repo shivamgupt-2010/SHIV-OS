@@ -44,7 +44,8 @@ class ChatViewModel(
     private val voiceSessionManager: VoiceSessionManager,
     private val chatHistoryDao: ChatHistoryDao,
     private val launcherShellManager: com.example.core.launcher.LauncherShellManager? = null,
-    private val actionDispatcher: ShivAIActionDispatcher? = null
+    private val actionDispatcher: ShivAIActionDispatcher? = null,
+    private val ttsEngine: com.example.ai.voice.tts.TextToSpeechEngine? = null
 ) : ViewModel() {
 
     private val _currentSessionId = MutableStateFlow("main_chat_session")
@@ -61,6 +62,9 @@ class ChatViewModel(
 
     private val _pendingActionConfirmation = MutableStateFlow<ShivAIAction?>(null)
     val pendingActionConfirmation: StateFlow<ShivAIAction?> = _pendingActionConfirmation.asStateFlow()
+
+    private val _currentlySpeakingId = MutableStateFlow<String?>(null)
+    val currentlySpeakingId: StateFlow<String?> = _currentlySpeakingId.asStateFlow()
 
     val voiceState: StateFlow<VoiceSessionState> = voiceSessionManager.state
 
@@ -198,7 +202,8 @@ class ChatViewModel(
                     text
                 }
 
-                orchestrator.processTaskStream(promptWithContext, session).collect { result ->
+                val historyList = _messages.value.takeLast(10).map { (if (it.role == "user") "user" else "assistant") to it.content }
+                orchestrator.processTaskStream(promptWithContext, session, historyList).collect { result ->
                     when (result) {
                         is com.example.core.utils.Result.Success -> {
                             currentText += result.data
@@ -279,6 +284,32 @@ class ChatViewModel(
             sb.append("**$roleLabel**:\n${m.content}\n\n")
         }
         return sb.toString()
+    }
+
+    fun toggleSpeak(messageId: String, text: String) {
+        val tts = ttsEngine ?: return
+        if (_currentlySpeakingId.value == messageId) {
+            tts.stop()
+            _currentlySpeakingId.value = null
+        } else {
+            tts.stop()
+            _currentlySpeakingId.value = messageId
+            viewModelScope.launch {
+                val cleanText = text.replace(Regex("```[\\s\\S]*?```"), "Code block omitted.")
+                    .replace(Regex("[#*_`]"), "")
+                tts.speak(cleanText).collect { event ->
+                    when (event) {
+                        is com.example.ai.voice.tts.TtsEvent.Completed,
+                        is com.example.ai.voice.tts.TtsEvent.Error -> {
+                            if (_currentlySpeakingId.value == messageId) {
+                                _currentlySpeakingId.value = null
+                            }
+                        }
+                        else -> {}
+                    }
+                }
+            }
+        }
     }
 
     fun toggleVoiceInteraction() {

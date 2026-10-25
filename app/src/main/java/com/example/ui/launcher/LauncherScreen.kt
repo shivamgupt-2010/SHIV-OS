@@ -447,32 +447,69 @@ fun ShivOSLiteLauncherScreen(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // ShivAI Cognitive Capsule Widget
+                // ShivAI Cognitive Capsule Widget with Ambient Glow Animation
+                val capsuleTransition = rememberInfiniteTransition(label = "CapsuleAura")
+                val capsuleAuraAlpha by capsuleTransition.animateFloat(
+                    initialValue = 0.35f,
+                    targetValue = 0.85f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(2200, easing = FastOutSlowInEasing),
+                        repeatMode = RepeatMode.Reverse
+                    ),
+                    label = "AuraAlpha"
+                )
+
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(ShivTheme.cardRadius))
                         .clickable { onNavigate("chat") },
                     shape = RoundedCornerShape(ShivTheme.cardRadius),
-                    color = ShivTheme.colors.surfaceVariant.copy(alpha = 0.7f),
-                    border = BorderStroke(1.dp, ShivTheme.colors.primary.copy(alpha = 0.4f))
+                    color = ShivTheme.colors.surfaceVariant.copy(alpha = 0.82f),
+                    border = BorderStroke(
+                        1.5.dp,
+                        androidx.compose.ui.graphics.Brush.horizontalGradient(
+                            listOf(
+                                ShivTheme.colors.primary.copy(alpha = capsuleAuraAlpha),
+                                ShivTheme.colors.accent.copy(alpha = capsuleAuraAlpha * 0.7f),
+                                ShivTheme.colors.primary.copy(alpha = capsuleAuraAlpha * 0.4f)
+                            )
+                        )
+                    )
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 11.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            TrishulIcon(size = 20.dp)
-                            Spacer(modifier = Modifier.width(10.dp))
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(ShivTheme.colors.primary.copy(alpha = 0.15f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                TrishulIcon(size = 20.dp)
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
                             Column {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = "Ask ShivAI",
+                                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = ShivTheme.colors.textPrimary
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .size(7.dp)
+                                            .clip(CircleShape)
+                                            .background(ShivTheme.colors.primary)
+                                    )
+                                }
                                 Text(
-                                    text = "Ask ShivAI",
-                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = ShivTheme.colors.textPrimary
-                                )
-                                Text(
-                                    text = "Cognitive reasoning, research & actions",
+                                    text = "Websites, videos, tasks & intelligence",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = ShivTheme.colors.textSecondary
                                 )
@@ -481,11 +518,16 @@ fun ShivOSLiteLauncherScreen(
                         IconButton(
                             onClick = { onNavigate("chat") },
                             modifier = Modifier
-                                .size(34.dp)
+                                .size(36.dp)
                                 .clip(CircleShape)
-                                .background(ShivTheme.colors.primary.copy(alpha = 0.15f))
+                                .background(ShivTheme.colors.primary.copy(alpha = 0.18f))
                         ) {
-                            Icon(Icons.Default.Mic, contentDescription = "Voice", tint = ShivTheme.colors.primary, modifier = Modifier.size(18.dp))
+                            Icon(
+                                Icons.Default.Mic,
+                                contentDescription = "Voice",
+                                tint = ShivTheme.colors.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
                         }
                     }
                 }

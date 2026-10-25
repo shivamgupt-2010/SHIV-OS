@@ -54,7 +54,10 @@ fun MainNavGraph(
                         return ChatViewModel(
                             appContainer.centralOrchestrator,
                             appContainer.voiceSessionManager,
-                            appContainer.appDatabase.chatHistoryDao()
+                            appContainer.appDatabase.chatHistoryDao(),
+                            appContainer.launcherShellManager,
+                            appContainer.shivAIActionDispatcher,
+                            appContainer.textToSpeechEngine
                         ) as T
                     }
                 }

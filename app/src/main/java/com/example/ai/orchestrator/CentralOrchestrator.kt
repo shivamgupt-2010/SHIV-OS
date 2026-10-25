@@ -39,9 +39,13 @@ class CentralOrchestrator(
         }
     }
 
-    suspend fun processTask(prompt: String, sessionId: String): Result<String> {
+    suspend fun processTask(
+        prompt: String,
+        sessionId: String,
+        conversationHistory: List<Pair<String, String>> = emptyList()
+    ): Result<String> {
         if (realEngine != null) {
-            return realEngine.chat(prompt)
+            return realEngine.chat(prompt, conversationHistory)
         }
         stateManager.updateState(status = com.example.ai.state.ExecutionStatus.ANALYZING_INTENT)
         val agent = routeIntent(prompt)
@@ -108,9 +112,13 @@ class CentralOrchestrator(
         return finalResult
     }
     
-    suspend fun processTaskStream(prompt: String, sessionId: String): Flow<Result<String>> {
+    suspend fun processTaskStream(
+        prompt: String,
+        sessionId: String,
+        conversationHistory: List<Pair<String, String>> = emptyList()
+    ): Flow<Result<String>> {
          if (realEngine != null) {
-             return realEngine.chatStream(prompt)
+             return realEngine.chatStream(prompt, conversationHistory)
          }
          val agent = routeIntent(prompt)
          Logger.d("Orchestrator stream routed task to: ${agent.name}")

@@ -21,6 +21,7 @@ import com.example.ui.launcher.AppDrawerScreen
 import com.example.ui.launcher.LauncherScreen
 import com.example.ui.launcher.LauncherViewModel
 import com.example.ui.notes.NotesScreen
+import com.example.ui.theme.MotionSystem
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.tools.ToolsScreen
 
@@ -74,7 +75,8 @@ class LauncherActivity : ComponentActivity() {
                                 appContainer.voiceSessionManager,
                                 appContainer.appDatabase.chatHistoryDao(),
                                 appContainer.launcherShellManager,
-                                appContainer.shivAIActionDispatcher
+                                appContainer.shivAIActionDispatcher,
+                                appContainer.textToSpeechEngine
                             ) as T
                         }
                     }
@@ -154,6 +156,46 @@ class LauncherActivity : ComponentActivity() {
                         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                             AnimatedContent(
                                 targetState = currentRoute,
+                                transitionSpec = {
+                                    if (targetState == "chat") {
+                                        (slideInVertically(animationSpec = MotionSystem.getSpringSpec(currentTheme.motionPreset, currentTheme.isReducedMotion)) { it / 3 } +
+                                         fadeIn(animationSpec = MotionSystem.getTweenSpec(currentTheme.motionPreset, currentTheme.isReducedMotion)) +
+                                         scaleIn(initialScale = 0.95f))
+                                        .togetherWith(
+                                            slideOutVertically(animationSpec = MotionSystem.getSpringSpec(currentTheme.motionPreset, currentTheme.isReducedMotion)) { -it / 6 } +
+                                            fadeOut(animationSpec = MotionSystem.getTweenSpec(currentTheme.motionPreset, currentTheme.isReducedMotion))
+                                        )
+                                    } else if (initialState == "chat") {
+                                        (slideInVertically(animationSpec = MotionSystem.getSpringSpec(currentTheme.motionPreset, currentTheme.isReducedMotion)) { -it / 6 } +
+                                         fadeIn(animationSpec = MotionSystem.getTweenSpec(currentTheme.motionPreset, currentTheme.isReducedMotion)))
+                                        .togetherWith(
+                                            slideOutVertically(animationSpec = MotionSystem.getSpringSpec(currentTheme.motionPreset, currentTheme.isReducedMotion)) { it / 3 } +
+                                            fadeOut(animationSpec = MotionSystem.getTweenSpec(currentTheme.motionPreset, currentTheme.isReducedMotion)) +
+                                            scaleOut(targetScale = 0.95f)
+                                        )
+                                    } else if (targetState == "all_apps") {
+                                        (slideInVertically(animationSpec = MotionSystem.getSpringSpec(currentTheme.motionPreset, currentTheme.isReducedMotion)) { it } +
+                                         fadeIn(animationSpec = MotionSystem.getTweenSpec(currentTheme.motionPreset, currentTheme.isReducedMotion)))
+                                        .togetherWith(
+                                            slideOutVertically(animationSpec = MotionSystem.getSpringSpec(currentTheme.motionPreset, currentTheme.isReducedMotion)) { -it / 4 } +
+                                            fadeOut(animationSpec = MotionSystem.getTweenSpec(currentTheme.motionPreset, currentTheme.isReducedMotion))
+                                        )
+                                    } else if (initialState == "all_apps") {
+                                        (slideInVertically(animationSpec = MotionSystem.getSpringSpec(currentTheme.motionPreset, currentTheme.isReducedMotion)) { -it / 4 } +
+                                         fadeIn(animationSpec = MotionSystem.getTweenSpec(currentTheme.motionPreset, currentTheme.isReducedMotion)))
+                                        .togetherWith(
+                                            slideOutVertically(animationSpec = MotionSystem.getSpringSpec(currentTheme.motionPreset, currentTheme.isReducedMotion)) { it } +
+                                            fadeOut(animationSpec = MotionSystem.getTweenSpec(currentTheme.motionPreset, currentTheme.isReducedMotion))
+                                        )
+                                    } else {
+                                        (fadeIn(animationSpec = MotionSystem.getTweenSpec(currentTheme.motionPreset, currentTheme.isReducedMotion)) +
+                                         scaleIn(initialScale = 0.98f))
+                                        .togetherWith(
+                                            fadeOut(animationSpec = MotionSystem.getTweenSpec(currentTheme.motionPreset, currentTheme.isReducedMotion)) +
+                                            scaleOut(targetScale = 0.98f)
+                                        )
+                                    }
+                                },
                                 label = "ScreenTransition"
                             ) { route ->
                                 when (route) {

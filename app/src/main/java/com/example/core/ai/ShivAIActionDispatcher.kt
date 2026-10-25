@@ -53,11 +53,36 @@ class ShivAIActionDispatcher(
      * Extracts structured action from model response text and returns clean display text + action.
      */
     fun parseActionFromText(rawText: String): Pair<String, ShivAIAction?> {
-        val match = ACTION_REGEX.find(rawText) ?: return Pair(rawText, null)
-        val jsonStr = match.groupValues[1].trim()
-        val cleanText = rawText.replace(match.value, "").trim()
-        val action = parseAction(jsonStr)
-        return Pair(cleanText, if (action !is ShivAIAction.InvalidAction) action else null)
+        val match = ACTION_REGEX.find(rawText)
+        if (match != null) {
+            val jsonStr = match.groupValues[1].trim()
+            val cleanText = rawText.replace(match.value, "").trim()
+            val action = parseAction(jsonStr)
+            if (action !is ShivAIAction.InvalidAction) {
+                return Pair(cleanText, action)
+            }
+        }
+
+        // Smart fallback detection:
+        // 1. Detect complete HTML code block intended as a website creation
+        if (rawText.contains("```html") && (rawText.contains("<html") || rawText.contains("<!DOCTYPE html>"))) {
+            val html = rawText.substringAfter("```html").substringBefore("```").trim()
+            if (html.length > 60) {
+                val titleMatch = Regex("<title>(.*?)</title>", RegexOption.IGNORE_CASE).find(html)
+                val title = titleMatch?.groupValues?.get(1)?.trim() ?: "Generated Webpage"
+                return Pair(
+                    rawText,
+                    ShivAIAction.CreateWebsite(
+                        title = title,
+                        filename = "index.html",
+                        htmlContent = html,
+                        summary = "Preview and launch '$title' in web browser."
+                    )
+                )
+            }
+        }
+
+        return Pair(rawText, null)
     }
 
     /**
