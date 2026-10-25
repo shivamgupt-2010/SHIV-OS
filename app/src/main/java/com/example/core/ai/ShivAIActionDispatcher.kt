@@ -183,9 +183,14 @@ class ShivAIActionDispatcher(
                         setDataAndType(uri, "text/html")
                         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
-                    context.startActivity(Intent.createChooser(intent, "Preview Website with...").apply {
+                    val resInfoList = context.packageManager.queryIntentActivities(intent, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY)
+                    for (resolveInfo in resInfoList) {
+                        context.grantUriPermission(resolveInfo.activityInfo.packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    val chooser = Intent.createChooser(intent, "Preview Website").apply {
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    })
+                    }
+                    context.startActivity(chooser)
                     true
                 }
 
