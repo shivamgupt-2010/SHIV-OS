@@ -902,6 +902,66 @@ fun ShivLockTab(appLockManager: AppLockManager, installedApps: List<AppInfo>) {
 
                     Spacer(modifier = Modifier.height(12.dp))
 
+                    val isMasterLockEnabled by appLockManager.shivLockMasterEnabled.collectAsState()
+
+                    // Master SHIV Lock Toggle Card
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = ShivTheme.colors.surfaceVariant,
+                        shape = RoundedCornerShape(14.dp),
+                        border = BorderStroke(1.dp, if (isMasterLockEnabled) ShivTheme.colors.primary.copy(alpha = 0.6f) else ShivTheme.colors.cardBorder)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                Icon(
+                                    Icons.Default.Security,
+                                    contentDescription = null,
+                                    tint = if (isMasterLockEnabled) ShivTheme.colors.primary else ShivTheme.colors.textSecondary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(14.dp))
+                                Column {
+                                    Text(
+                                        "SHIV Lock Protection",
+                                        fontWeight = FontWeight.Bold,
+                                        color = ShivTheme.colors.textPrimary
+                                    )
+                                    Text(
+                                        if (isMasterLockEnabled) "Launcher & apps are protected with Master PIN" else "Disabled — Launcher opens directly without password",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = ShivTheme.colors.textSecondary
+                                    )
+                                }
+                            }
+                            Switch(
+                                checked = isMasterLockEnabled,
+                                onCheckedChange = { checked ->
+                                    if (checked) {
+                                        if (!appLockManager.isMasterPinSet()) {
+                                            showCreatePinDialog = true
+                                        } else {
+                                            appLockManager.setShivLockEnabled(true)
+                                            Toast.makeText(context, "SHIV Lock Protection enabled", Toast.LENGTH_SHORT).show()
+                                        }
+                                    } else {
+                                        appLockManager.setShivLockEnabled(false)
+                                        Toast.makeText(context, "SHIV Lock Protection disabled", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Color.White,
+                                    checkedTrackColor = ShivTheme.colors.primary
+                                )
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
                     // Master Security PIN Configuration Card
                     Surface(
                         modifier = Modifier
@@ -942,7 +1002,8 @@ fun ShivLockTab(appLockManager: AppLockManager, installedApps: List<AppInfo>) {
                             appLockManager = appLockManager,
                             onPinCreated = {
                                 showCreatePinDialog = false
-                                Toast.makeText(context, "Master Security PIN saved successfully", Toast.LENGTH_SHORT).show()
+                                appLockManager.setShivLockEnabled(true)
+                                Toast.makeText(context, "Master Security PIN saved & SHIV Lock enabled!", Toast.LENGTH_SHORT).show()
                             },
                             onDismiss = { showCreatePinDialog = false }
                         )

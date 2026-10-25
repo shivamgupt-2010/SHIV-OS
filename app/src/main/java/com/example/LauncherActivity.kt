@@ -81,13 +81,15 @@ class LauncherActivity : ComponentActivity() {
                 )
 
                 val keyguardManager = remember { getSystemService(android.content.Context.KEYGUARD_SERVICE) as android.app.KeyguardManager }
-                var isSessionAuthenticated by remember { mutableStateOf(false) }
+                var isSessionAuthenticated by remember {
+                    mutableStateOf(!appContainer.appLockManager.isShivLockEnabled() || !appContainer.appLockManager.isMasterPinSet())
+                }
 
-                // Lock screen safety check: ensure launcher does not expose contents if keyguard is active
+                // Lock screen safety check: only lock if user has explicitly enabled SHIV Lock
                 DisposableEffect(Unit) {
                     val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
                         if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-                            if (keyguardManager.isKeyguardLocked) {
+                            if (keyguardManager.isKeyguardLocked && appContainer.appLockManager.isShivLockEnabled() && appContainer.appLockManager.isMasterPinSet()) {
                                 isSessionAuthenticated = false
                             }
                         }
@@ -101,7 +103,10 @@ class LauncherActivity : ComponentActivity() {
                     mutableStateOf(prefs.getBoolean("has_seen_onboarding", false))
                 }
 
-                if (!isSessionAuthenticated) {
+                val isShivLockActive = appContainer.appLockManager.isShivLockEnabled() && appContainer.appLockManager.isMasterPinSet()
+                val requiresAuthGate = isShivLockActive && !isSessionAuthenticated
+
+                if (requiresAuthGate) {
                     com.example.ui.auth.AuthGateScreen(
                         userProfileManager = appContainer.userProfileManager,
                         appLockManager = appContainer.appLockManager,

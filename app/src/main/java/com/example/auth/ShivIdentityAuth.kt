@@ -46,6 +46,16 @@ object ShivIdentityAuth {
         data class Error(val message: String) : OAuthState()
     }
 
+    private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
+
+    fun runOnMain(block: () -> Unit) {
+        if (android.os.Looper.myLooper() == android.os.Looper.getMainLooper()) {
+            block()
+        } else {
+            mainHandler.post(block)
+        }
+    }
+
     fun generatePkce(): Pair<String, String> {
         val bytes = ByteArray(64)
         SecureRandom().nextBytes(bytes)
@@ -108,8 +118,10 @@ object ShivIdentityAuth {
         if (state == null || state != expectedState || code == null) {
             val err = "State mismatch (expected=$expectedState, got=$state) or code missing"
             Log.e(TAG, err)
-            _authState.value = OAuthState.Error(err)
-            onComplete(false, err)
+            runOnMain {
+                _authState.value = OAuthState.Error(err)
+                onComplete(false, err)
+            }
             return
         }
 
@@ -131,8 +143,10 @@ object ShivIdentityAuth {
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 Log.e(TAG, "Token exchange network error: ${e.message}", e)
-                _authState.value = OAuthState.Error(e.message ?: "Network error during authentication")
-                onComplete(false, e.message)
+                runOnMain {
+                    _authState.value = OAuthState.Error(e.message ?: "Network error during authentication")
+                    onComplete(false, e.message)
+                }
             }
 
             override fun onResponse(call: Call, response: Response) {
@@ -152,7 +166,6 @@ object ShivIdentityAuth {
                         .remove(KEY_STATE)
                         .apply()
 
-                    _authState.value = OAuthState.Authenticated(accessToken)
                     Log.i(TAG, "Successfully authenticated with SHIV Identity! Token acquired.")
 
                     // Fetch user info asynchronously
@@ -160,16 +173,23 @@ object ShivIdentityAuth {
                         if (profile != null) {
                             prefs.edit().putString(KEY_USER_PROFILE, profile.toString()).apply()
                             val username = profile.optString("preferred_username", profile.optString("name", "User"))
-                            _authState.value = OAuthState.Authenticated(accessToken, username)
+                            runOnMain {
+                                _authState.value = OAuthState.Authenticated(accessToken, username)
+                            }
                         }
                     }
 
-                    onComplete(true, accessToken)
+                    runOnMain {
+                        _authState.value = OAuthState.Authenticated(accessToken)
+                        onComplete(true, accessToken)
+                    }
                 } else {
                     val errorDesc = json.optString("error_description", json.optString("detail", "Authentication failed"))
                     Log.e(TAG, "OAuth Token error ($response.code): $errorDesc")
-                    _authState.value = OAuthState.Error(errorDesc)
-                    onComplete(false, errorDesc)
+                    runOnMain {
+                        _authState.value = OAuthState.Error(errorDesc)
+                        onComplete(false, errorDesc)
+                    }
                 }
             }
         })
@@ -180,7 +200,7 @@ object ShivIdentityAuth {
         val code = uri.getQueryParameter("code")
         val state = uri.getQueryParameter("state")
         if (state != oauthState || code == null) {
-            onComplete(false, "State mismatch or code missing")
+            runOnMain { onComplete(false, "State mismatch or code missing") }
             return
         }
 
@@ -201,19 +221,16 @@ object ShivIdentityAuth {
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                onComplete(false, e.message)
+                runOnMain { onComplete(false, e.message) }
             }
 
             override fun onResponse(call: Call, response: Response) {
                 val json = JSONObject(response.body?.string() ?: "{}")
                 if (response.isSuccessful) {
                     val accessToken = json.getString("access_token")
-                    val idToken = json.optString("id_token")
-                    val refreshToken = json.optString("refresh_token")
-
-                    onComplete(true, accessToken)
+                    runOnMain { onComplete(true, accessToken) }
                 } else {
-                    onComplete(false, json.optString("error_description"))
+                    runOnMain { onComplete(false, json.optString("error_description")) }
                 }
             }
         })
@@ -302,8 +319,10 @@ object ShivIdentityAuth {
                         .putString(KEY_USER_PROFILE, JSONObject().put("preferred_username", identifier).toString())
                         .apply()
                 }
-                _authState.value = OAuthState.Authenticated(fallbackToken, identifier)
-                onComplete(true, fallbackToken)
+                runOnMain {
+                    _authState.value = OAuthState.Authenticated(fallbackToken, identifier)
+                    onComplete(true, fallbackToken)
+                }
             }
 
             override fun onResponse(call: Call, response: Response) {
@@ -316,10 +335,14 @@ object ShivIdentityAuth {
                         if (rememberMe) {
                             prefs.edit().putString(KEY_ACCESS_TOKEN, accessToken).apply()
                         }
-                        _authState.value = OAuthState.Authenticated(accessToken, identifier)
-                        onComplete(true, accessToken)
+                        runOnMain {
+                            _authState.value = OAuthState.Authenticated(accessToken, identifier)
+                            onComplete(true, accessToken)
+                        }
                     } catch (e: Exception) {
-                        onComplete(false, "Invalid token response format")
+                        runOnMain {
+                            onComplete(false, "Invalid token response format")
+                        }
                     }
                 } else {
                     // Fallback to offline verified session for user ease
@@ -331,8 +354,10 @@ object ShivIdentityAuth {
                             .putString(KEY_USER_PROFILE, JSONObject().put("preferred_username", identifier).toString())
                             .apply()
                     }
-                    _authState.value = OAuthState.Authenticated(localToken, identifier)
-                    onComplete(true, localToken)
+                    runOnMain {
+                        _authState.value = OAuthState.Authenticated(localToken, identifier)
+                        onComplete(true, localToken)
+                    }
                 }
             }
         })
@@ -346,7 +371,7 @@ object ShivIdentityAuth {
         onComplete: (Boolean, String?) -> Unit
     ) {
         if (username.isBlank() || email.isBlank() || secret.isBlank()) {
-            onComplete(false, "All registration fields are required")
+            runOnMain { onComplete(false, "All registration fields are required") }
             return
         }
 
@@ -357,8 +382,10 @@ object ShivIdentityAuth {
             .putString(KEY_ACCESS_TOKEN, token)
             .putString(KEY_USER_PROFILE, JSONObject().put("preferred_username", username).put("email", email).toString())
             .apply()
-        _authState.value = OAuthState.Authenticated(token, username)
-        onComplete(true, token)
+        runOnMain {
+            _authState.value = OAuthState.Authenticated(token, username)
+            onComplete(true, token)
+        }
     }
 
     fun signOut(context: Context) {

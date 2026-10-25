@@ -93,7 +93,7 @@ fun OnboardingScreen(
                             layoutManager?.applyProfile(selectedProfile)
                             themeEngine?.applyPreset(selectedThemePreset)
                             themeEngine?.setIconShape(selectedIconShape)
-                            stage = OnboardingStage.AUTH_SCREEN
+                            onComplete()
                         }
                     )
                 }
@@ -117,8 +117,7 @@ fun OnboardingScreen(
                             layoutManager?.applyProfile(selectedProfile)
                             themeEngine?.applyPreset(selectedThemePreset)
                             themeEngine?.setIconShape(selectedIconShape)
-                            // Require authentication before entering launcher
-                            stage = OnboardingStage.AUTH_SCREEN
+                            onComplete()
                         }
                     )
                 }
@@ -128,10 +127,18 @@ fun OnboardingScreen(
                     ShivIdentityAuthScreen(
                         onBack = { stage = OnboardingStage.WELCOME_CAROUSEL },
                         onAuthSuccess = {
-                            stage = OnboardingStage.SETUP_WIZARD
+                            layoutManager?.setComplexityMode(selectedComplexity)
+                            layoutManager?.applyProfile(selectedProfile)
+                            themeEngine?.applyPreset(selectedThemePreset)
+                            themeEngine?.setIconShape(selectedIconShape)
+                            onComplete()
                         },
                         onContinueGuest = {
-                            stage = OnboardingStage.SETUP_WIZARD
+                            layoutManager?.setComplexityMode(selectedComplexity)
+                            layoutManager?.applyProfile(selectedProfile)
+                            themeEngine?.applyPreset(selectedThemePreset)
+                            themeEngine?.setIconShape(selectedIconShape)
+                            onComplete()
                         }
                     )
                 }

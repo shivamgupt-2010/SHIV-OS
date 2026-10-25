@@ -80,6 +80,19 @@ class AppLockManager(
     private val _lockoutUntilTimestamp = MutableStateFlow(0L)
     val lockoutUntilTimestamp: StateFlow<Long> = _lockoutUntilTimestamp.asStateFlow()
 
+    private val _shivLockMasterEnabled = MutableStateFlow(prefs.getBoolean("shiv_lock_master_enabled", false))
+    val shivLockMasterEnabled: StateFlow<Boolean> = _shivLockMasterEnabled.asStateFlow()
+
+    fun isShivLockEnabled(): Boolean {
+        return _shivLockMasterEnabled.value
+    }
+
+    fun setShivLockEnabled(enabled: Boolean) {
+        _shivLockMasterEnabled.value = enabled
+        prefs.edit().putBoolean("shiv_lock_master_enabled", enabled).apply()
+        logSecurityEvent("SHIV_LOCK_TOGGLED", "com.example", "SHIV Lock master toggled: $enabled")
+    }
+
     fun isMasterPinSet(): Boolean {
         return prefs.getString("master_pin_hash", null)?.isNotBlank() == true
     }
