@@ -38,8 +38,9 @@ class ShivAIRealEngine(
         .writeTimeout(30, TimeUnit.SECONDS)
         .build()
 
-    private val primaryModel = "llama-3.3-70b-versatile"
-    private val fallbackModel = "llama-3.1-8b-instant"
+    private val primaryModel = "openai/gpt-oss-120b"
+    private val fallbackModel = "openai/gpt-oss-20b"
+    private val reasoningModel = "qwen/qwen3.8-27b"
 
     private val systemPrompt = """
         You are ShivAI, the high-performance cognitive AI companion and operating system intelligence of SHIV-OS Launcher.
@@ -84,13 +85,19 @@ class ShivAIRealEngine(
         prompt: String,
         conversationHistory: List<Pair<String, String>> = emptyList()
     ): Result<String> = withContext(Dispatchers.IO) {
-        // Try primary model first, fallback to secondary if needed
+        // Try primary model first, fallback to secondary and tertiary if needed
         val result = executeChat(prompt, primaryModel, conversationHistory)
         if (result is Result.Success) {
             result
         } else {
             Logger.d("Falling back to $fallbackModel on Groq")
-            executeChat(prompt, fallbackModel, conversationHistory)
+            val fallbackResult = executeChat(prompt, fallbackModel, conversationHistory)
+            if (fallbackResult is Result.Success) {
+                fallbackResult
+            } else {
+                Logger.d("Falling back to $reasoningModel on Groq")
+                executeChat(prompt, reasoningModel, conversationHistory)
+            }
         }
     }
 

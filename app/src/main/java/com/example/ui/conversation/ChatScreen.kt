@@ -212,7 +212,7 @@ fun ChatScreen(
                                             text = when {
                                                 voiceState == VoiceSessionState.LISTENING -> "Listening... Speak now"
                                                 messages.any { it.isStreaming } -> "Synthesizing response..."
-                                                else -> "Online • Llama 3.3 70B Active"
+                                                else -> "Online • GPT-OSS 120B Cognitive Core"
                                             },
                                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                                             color = ShivTheme.colors.textSecondary
@@ -593,7 +593,7 @@ fun ChatScreen(
                                 )
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
-                                    text = "Real intelligence powered by Llama 3.3 70B & Groq.\nBuild websites, generate videos, automate tasks, or chat naturally.",
+                                    text = "Real intelligence powered by GPT-OSS 120B & Groq.\nBuild websites, generate videos, automate tasks, or chat naturally.",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = ShivTheme.colors.textSecondary,
                                     textAlign = TextAlign.Center
