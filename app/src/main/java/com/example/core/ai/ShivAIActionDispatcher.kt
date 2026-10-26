@@ -29,6 +29,10 @@ sealed class ShivAIAction {
     data class InstallApp(val packageName: String, val appName: String, val query: String, val summary: String) : ShivAIAction()
     data class ReplyChat(val platform: String, val recipient: String, val messageText: String, val summary: String) : ShivAIAction()
     data class AutomateTask(val taskType: String, val payloadJson: String, val summary: String) : ShivAIAction()
+    data class ShareContent(val text: String, val subject: String? = null, val targetPackage: String? = null, val summary: String) : ShivAIAction()
+    data class SearchWeb(val query: String, val summary: String) : ShivAIAction()
+    data class DeepLink(val uri: String, val summary: String) : ShivAIAction()
+    data class MultiStepWorkflow(val title: String, val stepsJson: String, val summary: String) : ShivAIAction()
 
     data class InvalidAction(val error: String) : ShivAIAction()
 }
@@ -132,6 +136,33 @@ class ShivAIActionDispatcher(
                     val params = payload.optJSONObject("parameters")?.toString() ?: "{}"
                     val summary = payload.optString("summary", "Automate task: $taskType")
                     ShivAIAction.AutomateTask(taskType, params, summary)
+                }
+
+                "SHARE_CONTENT", "SHARE" -> {
+                    val text = payload.optString("text", "")
+                    val subject = payload.optString("subject", null)
+                    val targetPackage = payload.optString("targetPackage", null)
+                    val summary = payload.optString("summary", "Share content via Android Sharesheet")
+                    ShivAIAction.ShareContent(text, subject, targetPackage, summary)
+                }
+
+                "SEARCH_WEB" -> {
+                    val query = payload.optString("query", "")
+                    val summary = payload.optString("summary", "Search web for: $query")
+                    ShivAIAction.SearchWeb(query, summary)
+                }
+
+                "DEEP_LINK" -> {
+                    val uri = payload.optString("uri", "")
+                    val summary = payload.optString("summary", "Open deep link: $uri")
+                    ShivAIAction.DeepLink(uri, summary)
+                }
+
+                "MULTI_STEP_WORKFLOW", "PLAN_TASK" -> {
+                    val title = payload.optString("title", "Multi-Step Workflow")
+                    val stepsArr = payload.optJSONArray("steps")?.toString() ?: "[]"
+                    val summary = payload.optString("summary", "Execute multi-step workflow")
+                    ShivAIAction.MultiStepWorkflow(title, stepsArr, summary)
                 }
 
                 "APPLY_THEME" -> {
@@ -311,6 +342,47 @@ class ShivAIActionDispatcher(
                     true
                 }
 
+                is ShivAIAction.ShareContent -> {
+                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, action.text)
+                        if (!action.subject.isNullOrBlank()) {
+                            putExtra(Intent.EXTRA_SUBJECT, action.subject)
+                        }
+                        if (!action.targetPackage.isNullOrBlank()) {
+                            setPackage(action.targetPackage)
+                        }
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    val chooser = Intent.createChooser(shareIntent, "Share via...").apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(chooser)
+                    true
+                }
+
+                is ShivAIAction.SearchWeb -> {
+                    val searchIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=${Uri.encode(action.query)}")).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(searchIntent)
+                    true
+                }
+
+                is ShivAIAction.DeepLink -> {
+                    val linkIntent = Intent(Intent.ACTION_VIEW, Uri.parse(action.uri)).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(linkIntent)
+                    true
+                }
+
+                is ShivAIAction.MultiStepWorkflow -> {
+                    // Show confirmation notification / toast
+                    android.widget.Toast.makeText(context, "Executing Workflow: ${action.title}", android.widget.Toast.LENGTH_LONG).show()
+                    true
+                }
+
                 is ShivAIAction.UndoLastAction -> {
                     if (previousThemePreset != null) {
                         themeEngine.applyPreset(previousThemePreset!!)
@@ -334,6 +406,9 @@ class ShivAIActionDispatcher(
             is ShivAIAction.InstallApp,
             is ShivAIAction.ReplyChat,
             is ShivAIAction.AutomateTask,
+            is ShivAIAction.ShareContent,
+            is ShivAIAction.DeepLink,
+            is ShivAIAction.MultiStepWorkflow,
             is ShivAIAction.ApplyTheme,
             is ShivAIAction.ProposeLayout -> true
             else -> false

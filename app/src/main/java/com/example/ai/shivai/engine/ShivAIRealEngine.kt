@@ -77,6 +77,17 @@ class ShivAIRealEngine(
            Format:
            <<<ACTION:{"action":"AUTOMATE_TASK","taskType":"SET_THEME|LOCK_APP","parameters":{"presetKey":"CYAN_NEON"},"summary":"<Summary of launcher automation>"}>>>
 
+        6. SHARE_CONTENT:
+           When asked to share content or message via system sharesheet.
+           Format:
+           <<<ACTION:{"action":"SHARE","text":"<Text to share>","summary":"<Share summary>"}>>>
+
+        7. MULTI_STEP_WORKFLOW:
+           When the user gives a complex or multi-step instruction (e.g. 'Prepare promotional video, export it, and organize files').
+           Decompose the task into executable steps with dependencies:
+           Format:
+           <<<ACTION:{"action":"MULTI_STEP_WORKFLOW","title":"<Workflow Title>","steps":[{"id":"step_1","action":"files.list","inputs":{}},{"id":"step_2","action":"media.video.generate","depends_on":["step_1"],"inputs":{}}],"summary":"<Summary of multi-step workflow>"}>>>
+
         Always provide a natural, friendly, and complete conversational explanation along with any action.
         NEVER return fake placeholder execution plans or checklists like "1. Analyze initial state: COMPLETED". Always return real, complete content.
     """.trimIndent()

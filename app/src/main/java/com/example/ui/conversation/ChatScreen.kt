@@ -1010,6 +1010,10 @@ fun ActionApprovalCard(
                         is ShivAIAction.GenerateVideo -> Icons.Default.Videocam
                         is ShivAIAction.InstallApp -> Icons.Default.Download
                         is ShivAIAction.ReplyChat -> Icons.Default.Chat
+                        is ShivAIAction.ShareContent -> Icons.Default.Share
+                        is ShivAIAction.SearchWeb -> Icons.Default.Search
+                        is ShivAIAction.DeepLink -> Icons.Default.Link
+                        is ShivAIAction.MultiStepWorkflow -> Icons.Default.AccountTree
                         is ShivAIAction.ApplyTheme -> Icons.Default.Palette
                         is ShivAIAction.StartFocusSession -> Icons.Default.Timer
                         else -> Icons.Default.AutoAwesome
@@ -1030,6 +1034,10 @@ fun ActionApprovalCard(
                             is ShivAIAction.GenerateVideo -> "Video Generation"
                             is ShivAIAction.InstallApp -> "App Install"
                             is ShivAIAction.ReplyChat -> "Compose Reply"
+                            is ShivAIAction.ShareContent -> "Share Content"
+                            is ShivAIAction.SearchWeb -> "Web Search"
+                            is ShivAIAction.DeepLink -> "Open Deep Link"
+                            is ShivAIAction.MultiStepWorkflow -> "Multi-Step Workflow"
                             is ShivAIAction.ApplyTheme -> "Theme Change"
                             is ShivAIAction.StartFocusSession -> "Focus Session"
                             else -> "Launcher Automation"
@@ -1060,6 +1068,10 @@ fun ActionApprovalCard(
                     is ShivAIAction.GenerateVideo -> "Prompt: ${action.prompt} • Style: ${action.style}"
                     is ShivAIAction.InstallApp -> "Install ${action.appName} from Google Play Store"
                     is ShivAIAction.ReplyChat -> "Send via ${action.platform} to ${action.recipient}: '${action.messageText}'"
+                    is ShivAIAction.ShareContent -> action.summary
+                    is ShivAIAction.SearchWeb -> "Search Google for: '${action.query}'"
+                    is ShivAIAction.DeepLink -> "Navigate to: ${action.uri}"
+                    is ShivAIAction.MultiStepWorkflow -> "${action.title} • ${action.summary}"
                     is ShivAIAction.ApplyTheme -> "Switch launcher theme to ${action.presetKey} (${action.reason})"
                     is ShivAIAction.StartFocusSession -> "Start a ${action.minutes}-minute deep focus mode"
                     is ShivAIAction.AutomateTask -> action.summary
@@ -1098,6 +1110,10 @@ fun ActionApprovalCard(
                             is ShivAIAction.GenerateVideo -> "Generate Video"
                             is ShivAIAction.InstallApp -> "Open Play Store"
                             is ShivAIAction.ReplyChat -> "Send Reply"
+                            is ShivAIAction.ShareContent -> "Share Now"
+                            is ShivAIAction.SearchWeb -> "Search"
+                            is ShivAIAction.DeepLink -> "Open Link"
+                            is ShivAIAction.MultiStepWorkflow -> "Run Workflow"
                             is ShivAIAction.ApplyTheme -> "Apply Theme"
                             else -> "Approve & Execute"
                         },
