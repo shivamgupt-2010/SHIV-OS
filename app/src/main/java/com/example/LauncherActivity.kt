@@ -247,6 +247,18 @@ class LauncherActivity : ComponentActivity() {
                                         },
                                         onOpenSidebar = { coroutineScope.launch { drawerState.open() } }
                                     )
+                                    "automations" -> {
+                                        val automationsVm = remember {
+                                            com.example.ui.workflow.AutomationsViewModel(
+                                                appContainer.actionAutomationEngine,
+                                                appContainer.appDatabase.workflowDao()
+                                            )
+                                        }
+                                        com.example.ui.workflow.AutomationsScreen(
+                                            viewModel = automationsVm,
+                                            onBack = { currentRouteFlow.value = "launcher" }
+                                        )
+                                    }
                                     "all_apps" -> AppDrawerScreen(
                                         viewModel = launcherViewModel,
                                         onBack = { currentRouteFlow.value = "launcher" },

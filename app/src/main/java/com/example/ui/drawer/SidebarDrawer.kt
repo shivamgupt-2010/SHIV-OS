@@ -240,6 +240,12 @@ fun SidebarDrawer(
                 onClick = { onNavigate("agents"); onClose() }
             )
             DrawerNavItem(
+                icon = Icons.Default.AccountTree,
+                label = "Automations & Tasks",
+                isSelected = currentRoute == "automations",
+                onClick = { onNavigate("automations"); onClose() }
+            )
+            DrawerNavItem(
                 icon = Icons.Default.Build,
                 label = "Tools",
                 isSelected = currentRoute == "tools",

@@ -22,6 +22,18 @@ interface WorkflowDao {
     @Query("SELECT * FROM workflows WHERE status IN ('PENDING', 'RUNNING')")
     fun getActiveWorkflowsFlow(): kotlinx.coroutines.flow.Flow<List<WorkflowEntity>>
 
+    @Query("SELECT * FROM workflows ORDER BY createdAt DESC")
+    fun getAllWorkflowsFlow(): kotlinx.coroutines.flow.Flow<List<WorkflowEntity>>
+
+    @Query("SELECT * FROM workflows ORDER BY createdAt DESC")
+    suspend fun getAllWorkflows(): List<WorkflowEntity>
+
+    @Query("DELETE FROM workflows WHERE id = :id")
+    suspend fun deleteWorkflow(id: String)
+
+    @Query("DELETE FROM workflow_steps WHERE workflowId = :workflowId")
+    suspend fun deleteStepsForWorkflow(workflowId: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSteps(steps: List<WorkflowStepEntity>)
 

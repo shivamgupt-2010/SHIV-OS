@@ -331,6 +331,16 @@ class AppContainer(private val context: Context) {
         com.example.ai.workflow.engine.AutonomousWorkflowEngine(workflowRepository, toolExecutionManager, safetyManager, centralOrchestrator)
     }
 
+    val actionAutomationEngine: com.example.ai.workflow.engine.ActionAutomationEngine by lazy {
+        com.example.ai.workflow.engine.ActionAutomationEngine(
+            context,
+            workflowRepository,
+            toolRegistry,
+            shivAIActionDispatcher,
+            safetyManager
+        )
+    }
+
     val cognitiveTaskScheduler: com.example.ai.workflow.scheduler.CognitiveTaskScheduler by lazy {
         com.example.ai.workflow.scheduler.CognitiveTaskScheduler(context)
     }
