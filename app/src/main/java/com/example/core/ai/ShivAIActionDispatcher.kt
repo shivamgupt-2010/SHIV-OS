@@ -3,13 +3,21 @@ package com.example.core.ai
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.core.content.FileProvider
+import com.example.core.accessibility.ShivAIAccessibilityService
+import com.example.core.apps.AppActionAdapter
 import com.example.core.family.FamilyManager
+import com.example.core.files.FileActionAdapter
 import com.example.core.launcher.LayoutManager
 import com.example.core.lock.AppLockManager
+import com.example.core.media.VideoActionAdapter
 import com.example.core.studio.StudioThemeEngine
 import com.example.core.utils.Logger
 import com.example.core.wellbeing.WellbeingManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.io.File
 
@@ -22,17 +30,27 @@ sealed class ShivAIAction {
     data class OpenScreen(val route: String) : ShivAIAction()
     data class ShowMessage(val title: String, val message: String) : ShivAIAction()
     data class UndoLastAction(val reason: String = "User requested undo") : ShivAIAction()
-    
-    // User requested direct capabilities:
+
+    // Core User Capabilities
     data class CreateWebsite(val title: String, val filename: String, val htmlContent: String, val summary: String) : ShivAIAction()
     data class GenerateVideo(val prompt: String, val style: String, val durationSec: Int, val summary: String) : ShivAIAction()
     data class InstallApp(val packageName: String, val appName: String, val query: String, val summary: String) : ShivAIAction()
+    data class InstallLocalApk(val apkPath: String, val summary: String) : ShivAIAction()
     data class ReplyChat(val platform: String, val recipient: String, val messageText: String, val summary: String) : ShivAIAction()
     data class AutomateTask(val taskType: String, val payloadJson: String, val summary: String) : ShivAIAction()
     data class ShareContent(val text: String, val subject: String? = null, val targetPackage: String? = null, val summary: String) : ShivAIAction()
     data class SearchWeb(val query: String, val summary: String) : ShivAIAction()
     data class DeepLink(val uri: String, val summary: String) : ShivAIAction()
     data class MultiStepWorkflow(val title: String, val stepsJson: String, val summary: String) : ShivAIAction()
+
+    // Real On-Device File & UI Actions
+    data class CreateFile(val path: String?, val filename: String, val content: String, val summary: String) : ShivAIAction()
+    data class ReadFile(val path: String, val summary: String) : ShivAIAction()
+    data class ListFiles(val folder: String?, val extension: String?, val summary: String) : ShivAIAction()
+    data class DeleteFile(val path: String, val summary: String) : ShivAIAction()
+    data class ClickUI(val targetText: String, val exactMatch: Boolean = false, val summary: String) : ShivAIAction()
+    data class TypeUI(val textToType: String, val targetField: String? = null, val summary: String) : ShivAIAction()
+    data class ScrollUI(val forward: Boolean = true, val summary: String) : ShivAIAction()
 
     data class InvalidAction(val error: String) : ShivAIAction()
 }
@@ -50,6 +68,11 @@ class ShivAIActionDispatcher(
         const val SCHEMA_VERSION = "SHIV_AI_ACTION_V1"
         private val ACTION_REGEX = Regex("<<<ACTION:(.*?)>>>", RegexOption.DOT_MATCHES_ALL)
     }
+
+    private val fileAdapter by lazy { FileActionAdapter(context) }
+    private val appAdapter by lazy { AppActionAdapter(context) }
+    private val videoAdapter by lazy { VideoActionAdapter(context) }
+    private val coroutineScope = CoroutineScope(Dispatchers.Main)
 
     private var previousThemePreset: String? = null
 
@@ -86,6 +109,24 @@ class ShivAIActionDispatcher(
             }
         }
 
+        // 2. Detect code blocks with a file header e.g. "Create a file..."
+        if (rawText.contains("```") && (rawText.contains("# filename:") || rawText.contains("// filename:") || rawText.contains("/* filename:"))) {
+            val headerLine = rawText.lines().firstOrNull { it.contains("filename:", ignoreCase = true) }
+            val filename = headerLine?.substringAfter(":")?.trim()?.removeSuffix("*/")?.trim() ?: "code_output.txt"
+            val codeBlock = rawText.substringAfter("```").substringAfter("\n").substringBefore("```").trim()
+            if (codeBlock.isNotBlank()) {
+                return Pair(
+                    rawText,
+                    ShivAIAction.CreateFile(
+                        path = null,
+                        filename = filename,
+                        content = codeBlock,
+                        summary = "Save '$filename' to Documents/ShivAI/"
+                    )
+                )
+            }
+        }
+
         return Pair(rawText, null)
     }
 
@@ -95,10 +136,82 @@ class ShivAIActionDispatcher(
     fun parseAction(jsonStr: String): ShivAIAction {
         return try {
             val root = JSONObject(jsonStr)
-            val actionType = root.optString("action", "")
+            val actionType = root.optString("action", "").uppercase()
             val payload = root.optJSONObject("payload") ?: root
 
             when (actionType) {
+                // File Operations
+                "CREATE_FILE", "WRITE_FILE", "SAVE_FILE" -> {
+                    val path = payload.optString("path", null)
+                    val filename = payload.optString("filename", "document.txt")
+                    val content = payload.optString("content", "")
+                    val summary = payload.optString("summary", "Create file: $filename")
+                    ShivAIAction.CreateFile(path, filename, content, summary)
+                }
+
+                "READ_FILE" -> {
+                    val path = payload.optString("path", "")
+                    val summary = payload.optString("summary", "Read file: $path")
+                    ShivAIAction.ReadFile(path, summary)
+                }
+
+                "LIST_FILES" -> {
+                    val folder = payload.optString("folder", null)
+                    val ext = payload.optString("extension", null)
+                    val summary = payload.optString("summary", "List files in $folder")
+                    ShivAIAction.ListFiles(folder, ext, summary)
+                }
+
+                "DELETE_FILE" -> {
+                    val path = payload.optString("path", "")
+                    val summary = payload.optString("summary", "Delete file: $path")
+                    ShivAIAction.DeleteFile(path, summary)
+                }
+
+                // UI Automation Actions
+                "CLICK_UI", "TAP_UI" -> {
+                    val targetText = payload.optString("targetText", payload.optString("target", ""))
+                    val exact = payload.optBoolean("exactMatch", false)
+                    val summary = payload.optString("summary", "Tap on '$targetText'")
+                    ShivAIAction.ClickUI(targetText, exact, summary)
+                }
+
+                "TYPE_UI", "ENTER_TEXT" -> {
+                    val text = payload.optString("textToType", payload.optString("text", ""))
+                    val targetField = payload.optString("targetField", null)
+                    val summary = payload.optString("summary", "Type '$text'")
+                    ShivAIAction.TypeUI(text, targetField, summary)
+                }
+
+                "SCROLL_UI" -> {
+                    val forward = payload.optBoolean("forward", true)
+                    val summary = payload.optString("summary", if (forward) "Scroll down" else "Scroll up")
+                    ShivAIAction.ScrollUI(forward, summary)
+                }
+
+                // App Operations
+                "OPEN_APP" -> {
+                    val pkg = payload.optString("packageName", "")
+                    val appName = payload.optString("appName", pkg)
+                    val summary = payload.optString("summary", "Open $appName")
+                    ShivAIAction.OpenApp(pkg, appName)
+                }
+
+                "INSTALL_APP" -> {
+                    val pkg = payload.optString("packageName", "")
+                    val appName = payload.optString("appName", "Requested App")
+                    val query = payload.optString("query", appName)
+                    val summary = payload.optString("summary", "Install $appName from Play Store")
+                    ShivAIAction.InstallApp(pkg, appName, query, summary)
+                }
+
+                "INSTALL_APK", "INSTALL_LOCAL_APK" -> {
+                    val apkPath = payload.optString("apkPath", "")
+                    val summary = payload.optString("summary", "Install local package: $apkPath")
+                    ShivAIAction.InstallLocalApk(apkPath, summary)
+                }
+
+                // Media & Web Creation
                 "CREATE_WEBSITE" -> {
                     val title = payload.optString("title", "Generated Webpage")
                     val filename = payload.optString("filename", "index.html")
@@ -108,19 +221,11 @@ class ShivAIActionDispatcher(
                 }
 
                 "GENERATE_VIDEO", "EDIT_VIDEO" -> {
-                    val prompt = payload.optString("prompt", "Cinematic drone video")
+                    val prompt = payload.optString("prompt", "Cinematic promotional video")
                     val style = payload.optString("style", "cinematic")
                     val duration = payload.optInt("duration", 5)
                     val summary = payload.optString("summary", "Generate video: $prompt")
                     ShivAIAction.GenerateVideo(prompt, style, duration, summary)
-                }
-
-                "INSTALL_APP" -> {
-                    val pkg = payload.optString("packageName", "")
-                    val appName = payload.optString("appName", "Requested App")
-                    val query = payload.optString("query", appName)
-                    val summary = payload.optString("summary", "Install $appName from Google Play Store")
-                    ShivAIAction.InstallApp(pkg, appName, query, summary)
                 }
 
                 "REPLY_CHAT" -> {
@@ -184,17 +289,6 @@ class ShivAIActionDispatcher(
                     ShivAIAction.StartFocusSession(minutes, title)
                 }
 
-                "OPEN_APP" -> {
-                    val pkg = payload.optString("packageName", "")
-                    val installed = launcherShellManager?.installedApps?.value ?: emptyList()
-                    val match = installed.firstOrNull { it.packageName == pkg }
-                    if (match == null) {
-                        ShivAIAction.InvalidAction("Application '$pkg' is not installed.")
-                    } else {
-                        ShivAIAction.OpenApp(pkg, match.name)
-                    }
-                }
-
                 "SET_APP_BUDGET" -> {
                     val pkg = payload.optString("packageName", "")
                     val dailyMins = payload.optInt("dailyMinutes", 30).coerceIn(5, 480)
@@ -218,7 +312,7 @@ class ShivAIActionDispatcher(
     }
 
     /**
-     * Executes approved action with user confirmation.
+     * Executes action with user approval check.
      */
     fun executeAction(action: ShivAIAction, isUserConfirmed: Boolean = false): Boolean {
         if (!isUserConfirmed && requiresConfirmation(action)) {
@@ -227,51 +321,119 @@ class ShivAIActionDispatcher(
 
         return try {
             when (action) {
-                is ShivAIAction.CreateWebsite -> {
-                    // Save HTML to internal app storage or shared downloads
-                    val websitesDir = File(context.filesDir, "websites").apply { mkdirs() }
-                    val file = File(websitesDir, action.filename.ifBlank { "index.html" })
-                    file.writeText(action.htmlContent)
-                    
-                    // Launch browser / HTML viewer intent
-                    val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-                    val intent = Intent(Intent.ACTION_VIEW).apply {
-                        setDataAndType(uri, "text/html")
-                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+                // 1. Real File Creation
+                is ShivAIAction.CreateFile -> {
+                    val result = fileAdapter.createFile(action.path, action.filename, action.content)
+                    if (result.success) {
+                        Toast.makeText(context, "Saved: ${result.file.name}", Toast.LENGTH_SHORT).show()
+                        fileAdapter.openFile(result.file)
                     }
-                    val resInfoList = context.packageManager.queryIntentActivities(intent, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY)
-                    for (resolveInfo in resInfoList) {
-                        context.grantUriPermission(resolveInfo.activityInfo.packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    }
-                    val chooser = Intent.createChooser(intent, "Preview Website").apply {
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    }
-                    context.startActivity(chooser)
+                    result.success
+                }
+
+                // 2. Real File Reading
+                is ShivAIAction.ReadFile -> {
+                    val content = fileAdapter.readFile(action.path)
+                    Toast.makeText(context, "Read ${action.path} (${content.length} chars)", Toast.LENGTH_SHORT).show()
                     true
                 }
 
-                is ShivAIAction.GenerateVideo -> {
-                    // Open Pollinations AI / Video Generator URL in browser
-                    val videoUrl = "https://pollinations.ai/p/${Uri.encode(action.prompt)}?width=768&height=768&seed=42"
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(videoUrl)).apply {
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    }
-                    context.startActivity(intent)
+                // 3. List Files
+                is ShivAIAction.ListFiles -> {
+                    val items = fileAdapter.listFiles(action.folder, action.extension)
+                    Toast.makeText(context, "Found ${items.size} files", Toast.LENGTH_SHORT).show()
                     true
                 }
 
+                // 4. Delete File (Sensitive)
+                is ShivAIAction.DeleteFile -> {
+                    val deleted = fileAdapter.deleteFile(action.path)
+                    Toast.makeText(context, if (deleted) "Deleted ${action.path}" else "File not found", Toast.LENGTH_SHORT).show()
+                    deleted
+                }
+
+                // 5. UI Interaction: Click
+                is ShivAIAction.ClickUI -> {
+                    if (!ShivAIAccessibilityService.isServiceEnabled(context)) {
+                        Toast.makeText(context, "Please enable ShivAI in Settings > Accessibility", Toast.LENGTH_LONG).show()
+                        ShivAIAccessibilityService.promptEnableAccessibility(context)
+                        return false
+                    }
+                    val clicked = ShivAIAccessibilityService.instance?.clickElementByText(action.targetText, action.exactMatch) ?: false
+                    Toast.makeText(context, if (clicked) "Clicked: ${action.targetText}" else "Target not visible", Toast.LENGTH_SHORT).show()
+                    clicked
+                }
+
+                // 6. UI Interaction: Type Text
+                is ShivAIAction.TypeUI -> {
+                    if (!ShivAIAccessibilityService.isServiceEnabled(context)) {
+                        Toast.makeText(context, "Please enable ShivAI in Settings > Accessibility", Toast.LENGTH_LONG).show()
+                        ShivAIAccessibilityService.promptEnableAccessibility(context)
+                        return false
+                    }
+                    val entered = ShivAIAccessibilityService.instance?.enterText(action.textToType, action.targetField) ?: false
+                    Toast.makeText(context, if (entered) "Typed: ${action.textToType}" else "No editable field found", Toast.LENGTH_SHORT).show()
+                    entered
+                }
+
+                // 7. UI Interaction: Scroll
+                is ShivAIAction.ScrollUI -> {
+                    if (!ShivAIAccessibilityService.isServiceEnabled(context)) {
+                        Toast.makeText(context, "Please enable ShivAI in Settings > Accessibility", Toast.LENGTH_LONG).show()
+                        ShivAIAccessibilityService.promptEnableAccessibility(context)
+                        return false
+                    }
+                    ShivAIAccessibilityService.instance?.performScroll(action.forward) ?: false
+                }
+
+                // 8. Open App
+                is ShivAIAction.OpenApp -> {
+                    val (isCurfew, _) = familyManager.isAppBlockedByCurfew(action.packageName)
+                    if (isCurfew) return false
+                    if (appLockManager.isAppLocked(action.packageName)) return false
+                    val opened = appAdapter.openApp(action.appName.ifBlank { action.packageName })
+                    if (!opened) {
+                        launcherShellManager?.launchApp(action.packageName)
+                    }
+                    true
+                }
+
+                // 9. Install App from Store
                 is ShivAIAction.InstallApp -> {
-                    val intent = if (action.packageName.isNotBlank()) {
-                        Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=${action.packageName}"))
-                    } else {
-                        Intent(Intent.ACTION_VIEW, Uri.parse("market://search?q=${Uri.encode(action.query)}"))
-                    }.apply {
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    appAdapter.installFromPlayStore(action.appName.ifBlank { action.query }, action.packageName)
+                }
+
+                // 10. Install Local APK
+                is ShivAIAction.InstallLocalApk -> {
+                    appAdapter.installLocalApk(action.apkPath)
+                }
+
+                // 11. Create Website & Open in Browser
+                is ShivAIAction.CreateWebsite -> {
+                    val fileResult = fileAdapter.createFile(null, action.filename.ifBlank { "index.html" }, action.htmlContent)
+                    if (fileResult.success) {
+                        fileAdapter.openFile(fileResult.file)
                     }
-                    context.startActivity(intent)
+                    fileResult.success
+                }
+
+                // 12. Video Generation (Hardware MediaCodec export + Pollinations AI fallback)
+                is ShivAIAction.GenerateVideo -> {
+                    coroutineScope.launch {
+                        val videoResult = videoAdapter.generatePromoVideo(action.prompt, "SHIV-OS Automation")
+                        if (videoResult.success) {
+                            Toast.makeText(context, "Exported: ${videoResult.videoFile.name}", Toast.LENGTH_LONG).show()
+                            videoAdapter.playVideo(videoResult.videoFile)
+                        } else {
+                            // Fallback to online generator
+                            val videoUrl = "https://pollinations.ai/p/${Uri.encode(action.prompt)}?width=768&height=768&seed=42"
+                            appAdapter.openDeepLink(videoUrl)
+                        }
+                    }
                     true
                 }
 
+                // 13. Reply Chat (WhatsApp/SMS)
                 is ShivAIAction.ReplyChat -> {
                     val sendIntent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
@@ -287,6 +449,7 @@ class ShivAIActionDispatcher(
                     true
                 }
 
+                // 14. Automate Launcher Tasks
                 is ShivAIAction.AutomateTask -> {
                     when (action.taskType.uppercase()) {
                         "SET_THEME" -> {
@@ -304,85 +467,57 @@ class ShivAIActionDispatcher(
                     true
                 }
 
+                // 15. Apply Theme
                 is ShivAIAction.ApplyTheme -> {
                     previousThemePreset = themeEngine.currentTheme.value.themePreset
                     themeEngine.applyPreset(action.presetKey)
                     true
                 }
 
+                // 16. Start Focus Session
                 is ShivAIAction.StartFocusSession -> {
                     wellbeingManager.startFocusSession(action.minutes, action.title)
                     true
                 }
 
+                // 17. Set App Budget
                 is ShivAIAction.SetAppBudget -> {
                     wellbeingManager.setAppBudget(action.packageName, action.packageName, action.dailyMinutes, intentionalFriction = true)
                     true
                 }
 
-                is ShivAIAction.OpenApp -> {
-                    val (isCurfew, _) = familyManager.isAppBlockedByCurfew(action.packageName)
-                    if (isCurfew) return false
-                    if (appLockManager.isAppLocked(action.packageName)) return false
-                    launcherShellManager?.launchApp(action.packageName)
-                    true
-                }
-
-                is ShivAIAction.ProposeLayout -> {
-                    var cellX = 0
-                    var cellY = 0
-                    for (pkg in action.recommendedApps) {
-                        layoutManager.addItemToPage(0, cellX, cellY, pkg)
-                        cellX++
-                        if (cellX >= 4) {
-                            cellX = 0
-                            cellY++
-                        }
-                    }
-                    true
-                }
-
+                // 18. Share Content
                 is ShivAIAction.ShareContent -> {
                     val shareIntent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
                         putExtra(Intent.EXTRA_TEXT, action.text)
-                        if (!action.subject.isNullOrBlank()) {
-                            putExtra(Intent.EXTRA_SUBJECT, action.subject)
-                        }
-                        if (!action.targetPackage.isNullOrBlank()) {
-                            setPackage(action.targetPackage)
-                        }
+                        if (!action.subject.isNullOrBlank()) putExtra(Intent.EXTRA_SUBJECT, action.subject)
+                        if (!action.targetPackage.isNullOrBlank()) setPackage(action.targetPackage)
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
-                    val chooser = Intent.createChooser(shareIntent, "Share via...").apply {
+                    context.startActivity(Intent.createChooser(shareIntent, "Share via...").apply {
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    }
-                    context.startActivity(chooser)
+                    })
                     true
                 }
 
+                // 19. Search Web
                 is ShivAIAction.SearchWeb -> {
-                    val searchIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=${Uri.encode(action.query)}")).apply {
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    }
-                    context.startActivity(searchIntent)
-                    true
+                    appAdapter.openDeepLink("https://www.google.com/search?q=${Uri.encode(action.query)}")
                 }
 
+                // 20. Deep Link
                 is ShivAIAction.DeepLink -> {
-                    val linkIntent = Intent(Intent.ACTION_VIEW, Uri.parse(action.uri)).apply {
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    }
-                    context.startActivity(linkIntent)
-                    true
+                    appAdapter.openDeepLink(action.uri)
                 }
 
+                // 21. Multi-Step Workflow
                 is ShivAIAction.MultiStepWorkflow -> {
-                    // Show confirmation notification / toast
-                    android.widget.Toast.makeText(context, "Executing Workflow: ${action.title}", android.widget.Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, "Executing Workflow: ${action.title}", Toast.LENGTH_LONG).show()
                     true
                 }
 
+                // 22. Undo
                 is ShivAIAction.UndoLastAction -> {
                     if (previousThemePreset != null) {
                         themeEngine.applyPreset(previousThemePreset!!)
@@ -399,18 +534,37 @@ class ShivAIActionDispatcher(
         }
     }
 
-    private fun requiresConfirmation(action: ShivAIAction): Boolean {
+    /**
+     * Determines whether an action requires explicit user confirmation before executing.
+     * Safe actions (creating files, reading files, opening apps, searching web) execute immediately.
+     * Sensitive/destructive actions (deleting files, installing apps, UI clicks, typing) require confirmation.
+     */
+    fun requiresConfirmation(action: ShivAIAction): Boolean {
         return when (action) {
+            is ShivAIAction.DeleteFile,
+            is ShivAIAction.InstallApp,
+            is ShivAIAction.InstallLocalApk,
+            is ShivAIAction.ClickUI,
+            is ShivAIAction.TypeUI,
+            is ShivAIAction.ReplyChat,
+            is ShivAIAction.ApplyTheme,
+            is ShivAIAction.AutomateTask -> true
+
+            // Safe actions: run immediately!
+            is ShivAIAction.CreateFile,
+            is ShivAIAction.ReadFile,
+            is ShivAIAction.ListFiles,
+            is ShivAIAction.OpenApp,
             is ShivAIAction.CreateWebsite,
             is ShivAIAction.GenerateVideo,
-            is ShivAIAction.InstallApp,
-            is ShivAIAction.ReplyChat,
-            is ShivAIAction.AutomateTask,
-            is ShivAIAction.ShareContent,
+            is ShivAIAction.SearchWeb,
             is ShivAIAction.DeepLink,
+            is ShivAIAction.ScrollUI,
+            is ShivAIAction.StartFocusSession,
+            is ShivAIAction.ShareContent,
             is ShivAIAction.MultiStepWorkflow,
-            is ShivAIAction.ApplyTheme,
-            is ShivAIAction.ProposeLayout -> true
+            is ShivAIAction.UndoLastAction -> false
+
             else -> false
         }
     }

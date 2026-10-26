@@ -221,7 +221,7 @@ class ChatViewModel(
                     }
                 }
 
-                // Stream finished - parse any structured action for user approval
+                // Stream finished - parse any structured action for user approval or immediate execution
                 var displayText = currentText
                 var parsedAction: ShivAIAction? = null
                 if (actionDispatcher != null) {
@@ -229,7 +229,26 @@ class ChatViewModel(
                     displayText = clean
                     parsedAction = act
                     if (act != null) {
-                        _pendingActionConfirmation.value = act
+                        if (actionDispatcher.requiresConfirmation(act)) {
+                            _pendingActionConfirmation.value = act
+                        } else {
+                            // Safe action: execute immediately without blocking!
+                            val success = actionDispatcher.executeAction(act, isUserConfirmed = true)
+                            val statusNote = when (act) {
+                                is ShivAIAction.CreateFile -> if (success) "Created file: ${act.filename}" else "Could not write file."
+                                is ShivAIAction.OpenApp -> if (success) "Opened ${act.appName}" else "Could not open app."
+                                is ShivAIAction.CreateWebsite -> if (success) "Generated website & opened preview." else "Could not create preview."
+                                is ShivAIAction.GenerateVideo -> if (success) "Exporting video to Movies/ShivAI/..." else "Video rendering failed."
+                                is ShivAIAction.ReadFile -> if (success) "Read file: ${act.path}" else "Failed to read file."
+                                is ShivAIAction.ListFiles -> if (success) "Files listed." else "Could not list files."
+                                else -> if (success) "Action completed successfully." else "Action failed."
+                            }
+                            val autoConfirmId = UUID.randomUUID().toString()
+                            _messages.update { current ->
+                                current + ChatMessage(id = autoConfirmId, role = "system", content = statusNote)
+                            }
+                            chatHistoryDao.insertMessage(ChatHistoryEntity(id = autoConfirmId, sessionId = session, role = "system", content = statusNote))
+                        }
                     }
                 }
 

@@ -1007,8 +1007,14 @@ fun ActionApprovalCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val actionIcon = when (action) {
                         is ShivAIAction.CreateWebsite -> Icons.Default.Language
+                        is ShivAIAction.CreateFile -> Icons.Default.Description
+                        is ShivAIAction.ReadFile, is ShivAIAction.ListFiles -> Icons.Default.Folder
+                        is ShivAIAction.DeleteFile -> Icons.Default.Delete
+                        is ShivAIAction.ClickUI -> Icons.Default.TouchApp
+                        is ShivAIAction.TypeUI -> Icons.Default.Keyboard
+                        is ShivAIAction.OpenApp -> Icons.Default.Apps
                         is ShivAIAction.GenerateVideo -> Icons.Default.Videocam
-                        is ShivAIAction.InstallApp -> Icons.Default.Download
+                        is ShivAIAction.InstallApp, is ShivAIAction.InstallLocalApk -> Icons.Default.Download
                         is ShivAIAction.ReplyChat -> Icons.Default.Chat
                         is ShivAIAction.ShareContent -> Icons.Default.Share
                         is ShivAIAction.SearchWeb -> Icons.Default.Search
@@ -1031,8 +1037,17 @@ fun ActionApprovalCard(
                     Text(
                         text = when (action) {
                             is ShivAIAction.CreateWebsite -> "Website Ready"
+                            is ShivAIAction.CreateFile -> "Create File"
+                            is ShivAIAction.ReadFile -> "Read File"
+                            is ShivAIAction.ListFiles -> "List Files"
+                            is ShivAIAction.DeleteFile -> "Delete File"
+                            is ShivAIAction.ClickUI -> "Tap Screen"
+                            is ShivAIAction.TypeUI -> "Type Text"
+                            is ShivAIAction.ScrollUI -> "Scroll Screen"
+                            is ShivAIAction.OpenApp -> "Open App"
                             is ShivAIAction.GenerateVideo -> "Video Generation"
                             is ShivAIAction.InstallApp -> "App Install"
+                            is ShivAIAction.InstallLocalApk -> "Install APK"
                             is ShivAIAction.ReplyChat -> "Compose Reply"
                             is ShivAIAction.ShareContent -> "Share Content"
                             is ShivAIAction.SearchWeb -> "Web Search"
@@ -1065,8 +1080,17 @@ fun ActionApprovalCard(
             Text(
                 text = when (action) {
                     is ShivAIAction.CreateWebsite -> "${action.title} • ${action.summary}"
+                    is ShivAIAction.CreateFile -> "Save '${action.filename}' to ${action.path ?: "Documents/ShivAI/"}"
+                    is ShivAIAction.ReadFile -> "Read contents of: ${action.path}"
+                    is ShivAIAction.ListFiles -> "Browse files in ${action.folder ?: "Documents/ShivAI/"}"
+                    is ShivAIAction.DeleteFile -> "Permanently delete ${action.path}"
+                    is ShivAIAction.ClickUI -> "Tap element matching '${action.targetText}'"
+                    is ShivAIAction.TypeUI -> "Type text '${action.textToType}' into active field"
+                    is ShivAIAction.ScrollUI -> if (action.forward) "Scroll screen down" else "Scroll screen up"
+                    is ShivAIAction.OpenApp -> "Open ${action.appName}"
                     is ShivAIAction.GenerateVideo -> "Prompt: ${action.prompt} • Style: ${action.style}"
                     is ShivAIAction.InstallApp -> "Install ${action.appName} from Google Play Store"
+                    is ShivAIAction.InstallLocalApk -> "Install local package: ${action.apkPath}"
                     is ShivAIAction.ReplyChat -> "Send via ${action.platform} to ${action.recipient}: '${action.messageText}'"
                     is ShivAIAction.ShareContent -> action.summary
                     is ShivAIAction.SearchWeb -> "Search Google for: '${action.query}'"
