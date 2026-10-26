@@ -96,7 +96,9 @@ fun AutomationsScreen(
     val allWorkflows by viewModel.allWorkflows.collectAsState()
     val auditLogs by viewModel.auditLogs.collectAsState()
 
-    CosmicBackground {
+    Box(modifier = Modifier.fillMaxSize()) {
+        CosmicBackground(showSilhouette = false)
+
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
