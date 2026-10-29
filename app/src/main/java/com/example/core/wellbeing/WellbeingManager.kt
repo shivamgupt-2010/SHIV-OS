@@ -61,11 +61,11 @@ class WellbeingManager(
     val dailyNotificationCount: StateFlow<Int> = _dailyNotificationCount.asStateFlow()
 
     val weeklyUsageSummary: List<DayUsageSummary>
-        get() = getWeeklyUsageSummary()
+        get() = calculateWeeklyUsageSummary()
 
     val enforcementNotice: String = "NOTE: Android security model restricts launchers from terminating third-party app processes at the OS kernel level without Device Admin or Accessibility service. SHIV enforces mindful friction, launcher-level launch blocking, and focus downtime."
 
-    fun getWeeklyUsageSummary(): List<DayUsageSummary> {
+    fun calculateWeeklyUsageSummary(): List<DayUsageSummary> {
         if (!hasUsagePermission()) {
             val days = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
             return days.map { DayUsageSummary(it, 0L) }
