@@ -32,5 +32,6 @@ data class LauncherThemeEntity(
     val isLayoutLocked: Boolean = false,
     val isReducedMotion: Boolean = false,
     val wallpaperPreset: String = "DEEP_COSMOS",
+    val activeIconPack: String = "PACK_NEBULA",
     val updatedAt: Long = System.currentTimeMillis()
 )
