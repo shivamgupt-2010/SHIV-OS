@@ -93,19 +93,32 @@ fun AppDrawerScreen(
     val allApps by viewModel.installedApps.collectAsState()
     val currentTheme by viewModel.currentTheme.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
+    var debouncedQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("All") }
     var selectedAppForOptions by remember { mutableStateOf<AppInfo?>(null) }
     val context = LocalContext.current
 
+    // Debounce search query by 300ms to eliminate recomposition thrash while typing
+    LaunchedEffect(searchQuery) {
+        if (searchQuery.isBlank()) {
+            debouncedQuery = ""
+        } else {
+            kotlinx.coroutines.delay(300L)
+            debouncedQuery = searchQuery
+        }
+    }
+
     val categories = listOf("All", "Communication", "Productivity", "Media", "Tools", "System")
 
-    val filteredApps = remember(allApps, searchQuery, selectedCategory) {
-        allApps.filter { app ->
-            val matchesCategory = if (selectedCategory == "All") true
-            else classifyAppCategory(app.packageName, app.name) == selectedCategory
+    val filteredApps by remember(allApps, debouncedQuery, selectedCategory) {
+        derivedStateOf {
+            allApps.filter { app ->
+                val matchesCategory = if (selectedCategory == "All") true
+                else classifyAppCategory(app.packageName, app.name) == selectedCategory
 
-            val matchesText = matchAppSearch(searchQuery, app.name, app.packageName)
-            matchesCategory && matchesText
+                val matchesText = matchAppSearch(debouncedQuery, app.name, app.packageName)
+                matchesCategory && matchesText
+            }
         }
     }
 
@@ -399,24 +412,6 @@ fun AppDrawerScreen(
     }
 }
 
-fun loadAppIconBitmap(context: Context, packageName: String): androidx.compose.ui.graphics.ImageBitmap? {
-    return try {
-        val drawable = context.packageManager.getApplicationIcon(packageName)
-        if (drawable is BitmapDrawable && drawable.bitmap != null) {
-            return drawable.bitmap.asImageBitmap()
-        }
-        val width = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 128
-        val height = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 128
-        val bmp = android.graphics.Bitmap.createBitmap(width, height, android.graphics.Bitmap.Config.ARGB_8888)
-        val canvas = android.graphics.Canvas(bmp)
-        drawable.setBounds(0, 0, canvas.width, canvas.height)
-        drawable.draw(canvas)
-        bmp.asImageBitmap()
-    } catch (e: Exception) {
-        null
-    }
-}
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AppGridItem(
@@ -427,9 +422,14 @@ fun AppGridItem(
     onLongClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    val appIcon = remember(app.packageName) {
-        loadAppIconBitmap(context, app.packageName)
+    val cachedIcon = remember(app.packageName, iconShape) {
+        com.example.core.launcher.AppIconManager.getCachedIcon(app.packageName, iconShape)
     }
+    val appIcon = produceState(initialValue = cachedIcon, key1 = app.packageName, key2 = iconShape) {
+        if (value == null) {
+            value = com.example.core.launcher.AppIconManager.loadIcon(context, app.packageName, iconShape)
+        }
+    }.value
 
     val shapeCorner = when (iconShape) {
         "CIRCLE" -> CircleShape

@@ -27,7 +27,8 @@ class SettingsActivity : ComponentActivity() {
         val permissionOrchestrator = appContainer.permissionOrchestrator
         
         setContent {
-            MyApplicationTheme {
+            val currentTheme by appContainer.studioThemeEngine.currentTheme.collectAsState()
+            MyApplicationTheme(theme = currentTheme) {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     SettingsScreen(
                         permissionOrchestrator = permissionOrchestrator,

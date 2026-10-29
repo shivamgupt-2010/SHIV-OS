@@ -26,7 +26,8 @@ class LauncherViewModel(
     val appLockManager: AppLockManager? = null,
     val wellbeingManager: WellbeingManager? = null,
     val familyManager: FamilyManager? = null,
-    val wallpaperEngine: com.example.core.studio.WallpaperEngine? = null
+    val wallpaperEngine: com.example.core.studio.WallpaperEngine? = null,
+    val gestureManager: com.example.core.launcher.GestureManager? = null
 ) : ViewModel() {
 
     val currentWallpaper: StateFlow<com.example.core.studio.WallpaperConfig> = wallpaperEngine?.currentWallpaper

@@ -1,7 +1,9 @@
 package com.example.core.launcher
 
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.Resources
 import android.graphics.*
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
@@ -11,26 +13,50 @@ import androidx.compose.ui.graphics.asImageBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+data class IconPackInfo(
+    val packageName: String,
+    val label: String,
+    val icon: Drawable? = null
+)
+
 /**
- * High-performance App Icon Loader with memory LRU caching and custom shape masking.
- * Eliminates main-thread IPC during scrolling.
+ * High-performance App Icon Loader with memory LRU caching, external icon pack support,
+ * and custom shape masking. Eliminates main-thread IPC during scrolling.
  */
 object AppIconManager {
-    private const val CACHE_SIZE = 150 // Keep up to 150 icons in fast memory
+    private const val CACHE_SIZE = 250 // Keep up to 250 icons in fast memory
     private val memoryCache = object : LruCache<String, ImageBitmap>(CACHE_SIZE) {}
+    
+    @Volatile
+    var activeIconPackPackage: String? = null
+        private set
 
-    fun getCachedIcon(packageName: String): ImageBitmap? {
-        return memoryCache.get(packageName)
+    fun setActiveIconPack(packPackage: String?) {
+        if (activeIconPackPackage != packPackage) {
+            activeIconPackPackage = packPackage
+            clearCache()
+        }
+    }
+
+    fun getCachedIcon(cacheKey: String): ImageBitmap? {
+        return memoryCache.get(cacheKey)
+    }
+
+    fun getCachedIcon(packageName: String, iconShape: String = "SQUIRCLE"): ImageBitmap? {
+        val pack = activeIconPackPackage ?: "system"
+        val cacheKey = "${pack}_${packageName}_$iconShape"
+        return memoryCache.get(cacheKey) ?: memoryCache.get(packageName)
     }
 
     suspend fun loadIcon(context: Context, packageName: String, iconShape: String = "SQUIRCLE"): ImageBitmap? {
-        val cacheKey = "${packageName}_$iconShape"
+        val pack = activeIconPackPackage ?: "system"
+        val cacheKey = "${pack}_${packageName}_$iconShape"
         memoryCache.get(cacheKey)?.let { return it }
 
         return withContext(Dispatchers.IO) {
             try {
                 val pm = context.packageManager
-                val drawable = pm.getApplicationIcon(packageName)
+                val drawable = loadFromIconPack(context, packageName) ?: pm.getApplicationIcon(packageName)
                 val originalBitmap = drawableToBitmap(drawable)
                 val shapedBitmap = applyShapeMask(originalBitmap, iconShape)
                 val composeBitmap = shapedBitmap.asImageBitmap()
@@ -40,6 +66,56 @@ object AppIconManager {
                 null
             }
         }
+    }
+
+    private fun loadFromIconPack(context: Context, targetPackageName: String): Drawable? {
+        val packPkg = activeIconPackPackage ?: return null
+        return try {
+            val pm = context.packageManager
+            val packRes = pm.getResourcesForApplication(packPkg)
+            // Try sanitized package name formats used by Nova/Apex icon packs
+            val sanitized = targetPackageName.replace(".", "_").lowercase()
+            var resId = packRes.getIdentifier(sanitized, "drawable", packPkg)
+            if (resId == 0) {
+                val shortName = targetPackageName.substringAfterLast(".").lowercase()
+                resId = packRes.getIdentifier(shortName, "drawable", packPkg)
+            }
+            if (resId != 0) {
+                packRes.getDrawable(resId, null)
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    fun getInstalledIconPacks(context: Context): List<IconPackInfo> {
+        val pm = context.packageManager
+        val list = mutableListOf<IconPackInfo>()
+        val seen = mutableSetOf<String>()
+
+        val filterActions = listOf(
+            "com.novalauncher.THEME",
+            "org.adw.launcher.THEMES",
+            "com.gau.go.launcherex.theme",
+            "com.dlto.atom.launcher.THEME",
+            "com.teslacoilsw.launcher.THEME"
+        )
+
+        for (action in filterActions) {
+            val intent = Intent(action)
+            val activities = pm.queryIntentActivities(intent, 0)
+            for (resolve in activities) {
+                val pkg = resolve.activityInfo.packageName
+                if (pkg != context.packageName && seen.add(pkg)) {
+                    val label = resolve.loadLabel(pm).toString()
+                    val icon = try { resolve.loadIcon(pm) } catch (e: Exception) { null }
+                    list.add(IconPackInfo(pkg, label, icon))
+                }
+            }
+        }
+        return list
     }
 
     private fun drawableToBitmap(drawable: Drawable): Bitmap {

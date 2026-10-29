@@ -60,15 +60,41 @@ class WellbeingManager(
     private val _dailyNotificationCount = MutableStateFlow(prefs.getInt("notification_count_today", 138))
     val dailyNotificationCount: StateFlow<Int> = _dailyNotificationCount.asStateFlow()
 
-    val weeklyUsageSummary: List<DayUsageSummary> = listOf(
-        DayUsageSummary("Mon", 185),
-        DayUsageSummary("Tue", 210),
-        DayUsageSummary("Wed", 160),
-        DayUsageSummary("Thu", 195),
-        DayUsageSummary("Fri", 240),
-        DayUsageSummary("Sat", 290),
-        DayUsageSummary("Sun", 175)
-    )
+    val weeklyUsageSummary: List<DayUsageSummary>
+        get() = getWeeklyUsageSummary()
+
+    val enforcementNotice: String = "NOTE: Android security model restricts launchers from terminating third-party app processes at the OS kernel level without Device Admin or Accessibility service. SHIV enforces mindful friction, launcher-level launch blocking, and focus downtime."
+
+    fun getWeeklyUsageSummary(): List<DayUsageSummary> {
+        if (!hasUsagePermission()) {
+            val days = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+            return days.map { DayUsageSummary(it, 0L) }
+        }
+
+        val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager ?: return emptyList()
+        val now = System.currentTimeMillis()
+        val list = mutableListOf<DayUsageSummary>()
+        val dayNames = arrayOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+
+        for (i in 6 downTo 0) {
+            val dayCal = Calendar.getInstance().apply {
+                timeInMillis = now
+                add(Calendar.DAY_OF_YEAR, -i)
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            val start = dayCal.timeInMillis
+            val end = start + (24 * 60 * 60 * 1000L) - 1
+
+            val dayLabel = dayNames[dayCal.get(Calendar.DAY_OF_WEEK) - 1]
+            val stats = usageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, start, Math.min(end, now)) ?: emptyList()
+            val totalMinutes = stats.sumOf { it.totalTimeInForeground } / 60000L
+            list.add(DayUsageSummary(dayLabel, totalMinutes))
+        }
+        return list
+    }
 
     fun hasUsagePermission(): Boolean {
         val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? android.app.AppOpsManager ?: return false

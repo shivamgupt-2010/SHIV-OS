@@ -138,10 +138,15 @@ class AppContainer(private val context: Context) {
 
     val adaptiveAppPredictor: com.example.core.launcher.AdaptiveAppPredictor by lazy {
         com.example.core.launcher.AdaptiveAppPredictor(
+            context,
             launcherShellManager,
             contextAwarenessManager,
             usagePatternAnalyzer
         )
+    }
+
+    val gestureManager: com.example.core.launcher.GestureManager by lazy {
+        com.example.core.launcher.GestureManager(context)
     }
 
     val layoutManager: com.example.core.launcher.LayoutManager by lazy {

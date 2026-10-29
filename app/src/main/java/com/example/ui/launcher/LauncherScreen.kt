@@ -81,6 +81,7 @@ fun ShivOSLiteLauncherScreen(
     val context = LocalContext.current
     var isDefaultHome by remember { mutableStateOf(isDefaultLauncher(context)) }
     val installedApps by viewModel.installedApps.collectAsState()
+    val predictedApps by viewModel.predictedApps.collectAsState()
     val currentTheme by viewModel.currentTheme.collectAsState()
     val activeComplexity by viewModel.activeComplexityMode.collectAsState()
     val activeProfile by viewModel.activeProfile.collectAsState()
@@ -135,18 +136,32 @@ fun ShivOSLiteLauncherScreen(
         }
     }
 
+    val activity = context as? android.app.Activity
     Box(
         modifier = Modifier
             .fillMaxSize()
             .pointerInput(Unit) {
                 detectVerticalDragGestures { _, dragAmount ->
                     if (dragAmount < -60) {
-                        onNavigate("all_apps")
+                        if (activity != null && viewModel.gestureManager != null) {
+                            viewModel.gestureManager.executeGesture(activity, com.example.core.launcher.LauncherGesture.SWIPE_UP, onNavigate)
+                        } else {
+                            onNavigate("all_apps")
+                        }
+                    } else if (dragAmount > 60) {
+                        if (activity != null && viewModel.gestureManager != null) {
+                            viewModel.gestureManager.executeGesture(activity, com.example.core.launcher.LauncherGesture.SWIPE_DOWN, onNavigate)
+                        }
                     }
                 }
             }
             .pointerInput(Unit) {
                 detectTapGestures(
+                    onDoubleTap = {
+                        if (activity != null && viewModel.gestureManager != null) {
+                            viewModel.gestureManager.executeGesture(activity, com.example.core.launcher.LauncherGesture.DOUBLE_TAP, onNavigate)
+                        }
+                    },
                     onLongPress = {
                         showHomeEditModal = true
                     }
@@ -532,7 +547,83 @@ fun ShivOSLiteLauncherScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Native Configurable SHIV Glance Widgets
+                if (activeComplexity != ComplexityMode.SIMPLE) {
+                    com.example.ui.widgets.AgendaGlanceWidget(
+                        onTap = { onNavigate("all_apps") }
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    if (viewModel.wellbeingManager != null) {
+                        com.example.ui.widgets.WellbeingGlanceWidget(
+                            wellbeingManager = viewModel.wellbeingManager,
+                            onTap = { onNavigate("wellbeing") }
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                    }
+                    com.example.ui.widgets.QuickNoteGlanceWidget(
+                        onOpenNotes = { onNavigate("notes") }
+                    )
+                    Spacer(modifier = Modifier.height(14.dp))
+                }
+
+                // Adaptive AI Suggestions (Signals from UsageStatsManager + Context)
+                if (predictedApps.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            TrishulIcon(size = 14.dp)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "ADAPTIVE SUGGESTIONS",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 1.2.sp
+                                ),
+                                color = ShivTheme.colors.primary
+                            )
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = ShivTheme.colors.primary.copy(alpha = 0.15f),
+                            border = BorderStroke(1.dp, ShivTheme.colors.primary.copy(alpha = 0.3f))
+                        ) {
+                            Text(
+                                text = "Activity Ranked",
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.SemiBold),
+                                color = ShivTheme.colors.primary
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        predictedApps.take(6).forEach { app ->
+                            AppGridItemWithLongPress(
+                                app = app,
+                                iconShape = currentTheme.iconShape,
+                                scalePercent = currentTheme.iconScalePercent,
+                                isDock = false,
+                                onClick = { viewModel.onAppClicked(app.packageName) },
+                                onLongClick = { selectedAppForOptions = app }
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
 
                 // Dynamic App Grid (conforming to theme grid columns & rows)
                 val gridCols = currentTheme.gridColumns.coerceIn(3, 6)
@@ -971,9 +1062,14 @@ fun AppGridItemWithLongPress(
     onLongClick: () -> Unit
 ) {
     val context = LocalContext.current
-    val appIcon = remember(app.packageName) {
-        loadAppIconBitmap(context, app.packageName)
+    val cachedIcon = remember(app.packageName, iconShape) {
+        com.example.core.launcher.AppIconManager.getCachedIcon(app.packageName, iconShape)
     }
+    val appIcon = produceState(initialValue = cachedIcon, key1 = app.packageName, key2 = iconShape) {
+        if (value == null) {
+            value = com.example.core.launcher.AppIconManager.loadIcon(context, app.packageName, iconShape)
+        }
+    }.value
 
     val shapeCorner = when (iconShape) {
         "CIRCLE" -> CircleShape

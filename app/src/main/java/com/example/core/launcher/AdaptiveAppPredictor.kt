@@ -1,5 +1,8 @@
 package com.example.core.launcher
 
+import android.app.usage.UsageStats
+import android.app.usage.UsageStatsManager
+import android.content.Context
 import com.example.core.context.ContextAwarenessManager
 import com.example.core.intelligence.UsagePatternAnalyzer
 import kotlinx.coroutines.flow.Flow
@@ -7,47 +10,100 @@ import kotlinx.coroutines.flow.combine
 import java.util.Calendar
 
 class AdaptiveAppPredictor(
+    private val context: Context,
     private val launcherShellManager: LauncherShellManager,
     private val contextAwarenessManager: ContextAwarenessManager,
     private val usagePatternAnalyzer: UsagePatternAnalyzer
 ) {
-    // Intelligent app surfacing based on context
+    fun hasUsagePermission(): Boolean {
+        val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? android.app.AppOpsManager ?: return false
+        val mode = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            appOps.unsafeCheckOpNoThrow(
+                android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
+                android.os.Process.myUid(),
+                context.packageName
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            appOps.checkOpNoThrow(
+                android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
+                android.os.Process.myUid(),
+                context.packageName
+            )
+        }
+        return mode == android.app.AppOpsManager.MODE_ALLOWED
+    }
+
+    // Real intelligent app surfacing based on Android UsageStatsManager + contextual state
     val predictedApps: Flow<List<AppInfo>> = combine(
         launcherShellManager.installedApps,
         contextAwarenessManager.deviceState
     ) { apps, deviceState ->
-        
+        val now = System.currentTimeMillis()
+        val cal = Calendar.getInstance().apply {
+            add(Calendar.DAY_OF_YEAR, -7) // Look back 7 days for rich frequency signal
+        }
+        val startTime = cal.timeInMillis
         val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-        
+
+        val usageStatsMap = if (hasUsagePermission()) {
+            val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager
+            usm?.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, startTime, now)
+                ?.groupBy { it.packageName }
+                ?.mapValues { entry ->
+                    val totalForegroundMs = entry.value.sumOf { it.totalTimeInForeground }
+                    val lastUsed = entry.value.maxOfOrNull { it.lastTimeUsed } ?: 0L
+                    Pair(totalForegroundMs, lastUsed)
+                } ?: emptyMap()
+        } else {
+            emptyMap()
+        }
+
         val scoredApps = apps.map { app ->
-            var score = 0
-            val pkg = app.packageName.lowercase()
-            
-            // Basic heuristics based on device state
-            if (deviceState.isCharging && (pkg.contains("video") || pkg.contains("media") || pkg.contains("youtube"))) {
-                score += 10
+            val pkg = app.packageName
+            var score = 0.0
+
+            val stats = usageStatsMap[pkg]
+            if (stats != null) {
+                val totalForegroundMs = stats.first
+                val lastUsed = stats.second
+                // 1. Recency Score (higher if used in last 24h)
+                val hoursSinceLastUse = if (lastUsed > 0) ((now - lastUsed) / (1000 * 60 * 60)).coerceAtLeast(0) else 168
+                val recencyScore = (100.0 / (hoursSinceLastUse + 1.0)) * 1.5
+
+                // 2. Frequency & Engagement Score (minutes used)
+                val minutesUsed = (totalForegroundMs / 60000.0).coerceAtMost(600.0)
+                val engagementScore = minutesUsed * 0.5
+
+                score += recencyScore + engagementScore
             }
-            if (deviceState.isWifiConnected && (pkg.contains("social") || pkg.contains("insta") || pkg.contains("tiktok"))) {
-                score += 5
+
+            // 3. Time-of-day contextual affinity boosts
+            val pkgLower = pkg.lowercase()
+            if (hour in 6..9 && (pkgLower.contains("news") || pkgLower.contains("weather") || pkgLower.contains("mail") || pkgLower.contains("clock"))) {
+                score += 15.0
             }
-            if (!deviceState.isWifiConnected && (pkg.contains("game") || pkg.contains("video"))) {
-                score -= 10 // Penalize data heavy apps without wifi
+            if (hour in 9..17 && (pkgLower.contains("work") || pkgLower.contains("slack") || pkgLower.contains("teams") || pkgLower.contains("calendar") || pkgLower.contains("doc"))) {
+                score += 20.0
             }
-            
-            // Time based heuristics
-            if (hour in 6..9 && (pkg.contains("news") || pkg.contains("weather") || pkg.contains("mail"))) {
-                score += 15
+            if (hour in 18..23 && (pkgLower.contains("entertainment") || pkgLower.contains("media") || pkgLower.contains("music") || pkgLower.contains("video") || pkgLower.contains("game"))) {
+                score += 15.0
             }
-            if (hour in 18..23 && (pkg.contains("netflix") || pkg.contains("music") || pkg.contains("game"))) {
-                score += 10
+
+            // 4. Device State affinities
+            if (deviceState.isCharging && (pkgLower.contains("youtube") || pkgLower.contains("video") || pkgLower.contains("netflix"))) {
+                score += 10.0
             }
-            if (hour in 9..17 && (pkg.contains("slack") || pkg.contains("teams") || pkg.contains("calendar"))) {
-                score += 12
-            }
-            
+
             Pair(app, score)
         }
-        
-        scoredApps.sortedByDescending { it.second }.map { it.first }.take(8)
+
+        // If no usage permissions or all scores 0, fallback to recently installed / top apps
+        val sorted = scoredApps.sortedByDescending { it.second }.map { it.first }
+        if (usageStatsMap.isEmpty()) {
+            apps.take(8)
+        } else {
+            sorted.take(8)
+        }
     }
 }

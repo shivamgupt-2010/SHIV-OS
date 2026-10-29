@@ -1,14 +1,19 @@
 package com.example.core.lock
 
+import android.app.Activity
 import android.app.KeyguardManager
 import android.content.Context
+import android.content.DialogInterface
+import android.hardware.biometrics.BiometricPrompt
 import android.os.Build
+import android.os.CancellationSignal
 import com.example.data.local.dao.AppLockDao
 import com.example.data.local.entity.AppLockPolicyEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 
 enum class LockMethod {
@@ -31,6 +36,12 @@ data class SecurityLogEvent(
     val details: String
 )
 
+/**
+ * AppLockManager:
+ * Enterprise-grade Android application locking and credential gateway.
+ * Supports PIN, Pattern, Password, and Biometric authentication with
+ * salted SHA-256 hashing, recovery questions, lockout cooldowns, and customizable relock policies.
+ */
 class AppLockManager(
     private val context: Context,
     private val appLockDao: AppLockDao,
@@ -65,7 +76,7 @@ class AppLockManager(
     private val _subtleAnimationEnabled = MutableStateFlow(prefs.getBoolean("subtle_animation", true))
     val subtleAnimationEnabled: StateFlow<Boolean> = _subtleAnimationEnabled.asStateFlow()
 
-    // Recents Task Privacy
+    // Recents Task Privacy (Window FLAG_SECURE)
     private val _preventRecentTasksPreview = MutableStateFlow(prefs.getBoolean("prevent_recents_preview", true))
     val preventRecentTasksPreview: StateFlow<Boolean> = _preventRecentTasksPreview.asStateFlow()
 
@@ -83,9 +94,7 @@ class AppLockManager(
     private val _shivLockMasterEnabled = MutableStateFlow(prefs.getBoolean("shiv_lock_master_enabled", false))
     val shivLockMasterEnabled: StateFlow<Boolean> = _shivLockMasterEnabled.asStateFlow()
 
-    fun isShivLockEnabled(): Boolean {
-        return _shivLockMasterEnabled.value
-    }
+    fun isShivLockEnabled(): Boolean = _shivLockMasterEnabled.value
 
     fun setShivLockEnabled(enabled: Boolean) {
         _shivLockMasterEnabled.value = enabled
@@ -93,6 +102,7 @@ class AppLockManager(
         logSecurityEvent("SHIV_LOCK_TOGGLED", "com.example", "SHIV Lock master toggled: $enabled")
     }
 
+    // --- PIN Credential Handling ---
     fun isMasterPinSet(): Boolean {
         return prefs.getString("master_pin_hash", null)?.isNotBlank() == true
     }
@@ -109,15 +119,14 @@ class AppLockManager(
         val inputHash = hashCredential(pin)
         val matches = storedHash == inputHash
         if (matches) {
-            _failedAttempts.value = 0
-            _lockoutUntilTimestamp.value = 0L
-            logSecurityEvent("PIN_VERIFIED", "com.example", "Successful PIN authentication")
+            onSuccessfulAuth("PIN_AUTH")
         } else {
             recordFailedAttempt("PIN_AUTH")
         }
         return matches
     }
 
+    // --- Password Credential Handling ---
     fun isMasterPasswordSet(): Boolean {
         return prefs.getString("master_password_hash", null)?.isNotBlank() == true
     }
@@ -134,29 +143,110 @@ class AppLockManager(
         val inputHash = hashCredential(password)
         val matches = storedHash == inputHash
         if (matches) {
-            _failedAttempts.value = 0
-            _lockoutUntilTimestamp.value = 0L
-            logSecurityEvent("PASSWORD_VERIFIED", "com.example", "Successful password authentication")
+            onSuccessfulAuth("PASSWORD_AUTH")
         } else {
             recordFailedAttempt("PASSWORD_AUTH")
         }
         return matches
     }
 
+    // --- Pattern Credential Handling ---
+    fun isMasterPatternSet(): Boolean {
+        return prefs.getString("master_pattern_hash", null)?.isNotBlank() == true
+    }
+
+    fun setMasterPattern(pattern: String) {
+        val hash = hashCredential(pattern)
+        prefs.edit().putString("master_pattern_hash", hash).apply()
+        logSecurityEvent("PATTERN_CONFIGURED", "com.example", "Master Security Pattern updated")
+    }
+
+    fun verifyMasterPattern(pattern: String): Boolean {
+        if (isLockedOut()) return false
+        val storedHash = prefs.getString("master_pattern_hash", null) ?: return false
+        val inputHash = hashCredential(pattern)
+        val matches = storedHash == inputHash
+        if (matches) {
+            onSuccessfulAuth("PATTERN_AUTH")
+        } else {
+            recordFailedAttempt("PATTERN_AUTH")
+        }
+        return matches
+    }
+
+    // --- Security Recovery Question & Reset ---
+    fun isRecoveryConfigured(): Boolean {
+        return prefs.getString("recovery_answer_hash", null)?.isNotBlank() == true
+    }
+
+    fun getSecurityQuestion(): String {
+        return prefs.getString("recovery_question", "What is your primary security passphrase?")
+            ?: "What is your primary security passphrase?"
+    }
+
+    fun setSecurityRecovery(question: String, answer: String) {
+        val hash = hashCredential(answer.trim().lowercase())
+        prefs.edit()
+            .putString("recovery_question", question.trim())
+            .putString("recovery_answer_hash", hash)
+            .apply()
+        logSecurityEvent("RECOVERY_CONFIGURED", "com.example", "Security recovery question configured")
+    }
+
+    fun verifySecurityRecovery(answer: String): Boolean {
+        val storedHash = prefs.getString("recovery_answer_hash", null) ?: return false
+        val inputHash = hashCredential(answer.trim().lowercase())
+        return storedHash == inputHash
+    }
+
+    fun resetCredentialsWithRecovery(recoveryAnswer: String, newCredential: String, method: LockMethod): Boolean {
+        if (!verifySecurityRecovery(recoveryAnswer)) return false
+        when (method) {
+            LockMethod.PIN -> setMasterPin(newCredential)
+            LockMethod.PASSWORD -> setMasterPassword(newCredential)
+            LockMethod.PATTERN -> setMasterPattern(newCredential)
+            LockMethod.BIOMETRICS -> setMasterPin(newCredential)
+        }
+        setLockMethod(method)
+        _failedAttempts.value = 0
+        _lockoutUntilTimestamp.value = 0L
+        logSecurityEvent("CREDENTIAL_RECOVERY_SUCCESS", "com.example", "Credentials reset via recovery answer")
+        return true
+    }
+
+    // --- Universal Credential Check ---
+    fun isMasterCredentialConfigured(): Boolean {
+        return when (_lockMethod.value) {
+            LockMethod.PIN -> isMasterPinSet()
+            LockMethod.PASSWORD -> isMasterPasswordSet()
+            LockMethod.PATTERN -> isMasterPatternSet()
+            LockMethod.BIOMETRICS -> canAuthenticate() || isMasterPinSet()
+        }
+    }
+
+    fun verifyCredential(input: String, method: LockMethod = _lockMethod.value): Boolean {
+        return when (method) {
+            LockMethod.PIN -> verifyMasterPin(input)
+            LockMethod.PASSWORD -> verifyMasterPassword(input)
+            LockMethod.PATTERN -> verifyMasterPattern(input)
+            LockMethod.BIOMETRICS -> verifyMasterPin(input)
+        }
+    }
+
+    // --- Salted SHA-256 Hashing ---
     private fun hashCredential(credential: String): String {
-        val salt = "SHIV_LOCK_SALT_SECURE_2026"
-        val bytes = java.security.MessageDigest.getInstance("SHA-256").digest((credential + salt).toByteArray(Charsets.UTF_8))
+        val salt = "SHIV_LOCK_SALT_SECURE_2026_V2"
+        val bytes = MessageDigest.getInstance("SHA-256").digest((credential + salt).toByteArray(Charsets.UTF_8))
         return bytes.joinToString("") { "%02x".format(it) }
     }
 
-    private val _securityLogs = MutableStateFlow<List<SecurityLogEvent>>(
-        listOf(
-            SecurityLogEvent(System.currentTimeMillis() - 3600_000, "SYSTEM_ARMED", "com.example", "SHIV Lock active with biometric authentication"),
-            SecurityLogEvent(System.currentTimeMillis() - 1800_000, "POLICY_SYNC", "com.android.chrome", "Lock policy confirmed for Browser")
-        )
-    )
-    val securityLogs: StateFlow<List<SecurityLogEvent>> = _securityLogs.asStateFlow()
+    private fun onSuccessfulAuth(type: String) {
+        _failedAttempts.value = 0
+        _lockoutUntilTimestamp.value = 0L
+        logSecurityEvent("AUTH_SUCCESS", "com.example", "Successful $type")
+    }
 
+    // --- Biometric Authentication Execution ---
     fun canAuthenticate(): Boolean {
         val keyguardManager = context.getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
         val isDeviceSecure = keyguardManager?.isDeviceSecure ?: false
@@ -173,6 +263,53 @@ class AppLockManager(
         return isDeviceSecure
     }
 
+    fun authenticateWithBiometrics(
+        activity: Activity,
+        title: String = "Unlock SHIV-OS",
+        subtitle: String = "Verify identity with fingerprint or face",
+        onResult: (Boolean) -> Unit
+    ) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            try {
+                val cancellationSignal = CancellationSignal()
+                val prompt = BiometricPrompt.Builder(activity)
+                    .setTitle(title)
+                    .setSubtitle(subtitle)
+                    .setNegativeButton("Use PIN/Pattern", activity.mainExecutor, DialogInterface.OnClickListener { _, _ ->
+                        onResult(false)
+                    })
+                    .build()
+
+                prompt.authenticate(
+                    cancellationSignal,
+                    activity.mainExecutor,
+                    object : BiometricPrompt.AuthenticationCallback() {
+                        override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult?) {
+                            super.onAuthenticationSucceeded(result)
+                            onSuccessfulAuth("BIOMETRIC_AUTH")
+                            onResult(true)
+                        }
+
+                        override fun onAuthenticationError(errorCode: Int, errString: CharSequence?) {
+                            super.onAuthenticationError(errorCode, errString)
+                            onResult(false)
+                        }
+
+                        override fun onAuthenticationFailed() {
+                            super.onAuthenticationFailed()
+                            recordFailedAttempt("BIOMETRIC_AUTH")
+                        }
+                    }
+                )
+            } catch (e: Exception) {
+                onResult(false)
+            }
+        } else {
+            onResult(false)
+        }
+    }
+
+    // --- Session & Relock Checks ---
     fun isAppLocked(packageName: String): Boolean {
         val isPolicyLocked = lockedPackages.value.contains(packageName)
         if (!isPolicyLocked) return false
@@ -204,19 +341,41 @@ class AppLockManager(
         }
     }
 
-    fun recordFailedAttempt(packageName: String) {
+    fun clearUnlockedSession(packageName: String) {
+        activeUnlockedSessions.remove(packageName)
+    }
+
+    fun clearAllUnlockedSessions() {
+        activeUnlockedSessions.clear()
+    }
+
+    fun onActivityPaused() {
+        // If configured to relock immediately or on leave, clear in-memory sessions
+        if (_autoRelockTimeoutSeconds.value <= 0) {
+            activeUnlockedSessions.clear()
+        }
+    }
+
+    fun onScreenTurnedOff() {
+        if (_autoRelockTimeoutSeconds.value == -1 || _autoRelockTimeoutSeconds.value <= 0) {
+            activeUnlockedSessions.clear()
+        }
+    }
+
+    // --- Lockout Management ---
+    fun recordFailedAttempt(source: String) {
         val count = _failedAttempts.value + 1
         _failedAttempts.value = count
         val now = System.currentTimeMillis()
 
         if (count >= 5) {
             _lockoutUntilTimestamp.value = now + 60_000 // 60s lockout
-            logSecurityEvent("LOCKOUT_TRIGGERED", packageName, "5 consecutive failed unlock attempts. 60s cooldown applied.")
+            logSecurityEvent("LOCKOUT_TRIGGERED", source, "5 consecutive failed unlock attempts. 60s cooldown applied.")
         } else if (count >= 3) {
             _lockoutUntilTimestamp.value = now + 30_000 // 30s lockout
-            logSecurityEvent("FAILED_ATTEMPT_THRESHOLD", packageName, "3 consecutive failed attempts.")
+            logSecurityEvent("FAILED_ATTEMPT_THRESHOLD", source, "3 consecutive failed attempts.")
         } else {
-            logSecurityEvent("FAILED_UNLOCK", packageName, "Failed authentication attempt #$count")
+            logSecurityEvent("FAILED_UNLOCK", source, "Failed authentication attempt #$count")
         }
     }
 
@@ -228,6 +387,14 @@ class AppLockManager(
         val diff = _lockoutUntilTimestamp.value - System.currentTimeMillis()
         return if (diff > 0) (diff / 1000).toInt() else 0
     }
+
+    private val _securityLogs = MutableStateFlow<List<SecurityLogEvent>>(
+        listOf(
+            SecurityLogEvent(System.currentTimeMillis() - 3600_000, "SYSTEM_ARMED", "com.example", "SHIV Lock active with biometric & multi-credential support"),
+            SecurityLogEvent(System.currentTimeMillis() - 1800_000, "POLICY_SYNC", "com.android.chrome", "Lock policy confirmed for Browser")
+        )
+    )
+    val securityLogs: StateFlow<List<SecurityLogEvent>> = _securityLogs.asStateFlow()
 
     private fun logSecurityEvent(type: String, pkg: String, detail: String) {
         val event = SecurityLogEvent(System.currentTimeMillis(), type, pkg, detail)
@@ -304,12 +471,6 @@ class AppLockManager(
             if (existing != null) {
                 appLockDao.savePolicy(existing.copy(relockTimeoutSeconds = timeoutSeconds, updatedAt = System.currentTimeMillis()))
             }
-        }
-    }
-
-    fun onScreenTurnedOff() {
-        if (_autoRelockTimeoutSeconds.value == -1) {
-            activeUnlockedSessions.clear()
         }
     }
 }

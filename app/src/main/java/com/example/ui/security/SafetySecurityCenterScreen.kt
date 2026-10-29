@@ -1614,12 +1614,24 @@ fun FamilyAccountLinkingTab(familyManager: FamilyManager) {
                     Text(
                         text = pairingCode,
                         modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp),
-                        style = MaterialTheme.typography.headlineMedium.copy(letterSpacing = 4.sp, fontWeight = FontWeight.Bold),
+                        style = MaterialTheme.typography.titleLarge.copy(letterSpacing = 2.sp, fontWeight = FontWeight.Bold),
                         color = ShivTheme.colors.primary
                     )
                 }
                 Spacer(modifier = Modifier.height(10.dp))
-                Text("Enter this code on the Parent device to pair immediately", style = MaterialTheme.typography.bodySmall, color = ShivTheme.colors.textSecondary)
+                Text("Enter this cryptographically signed code on the Parent device to pair securely (valid for 15 minutes)", style = MaterialTheme.typography.bodySmall, color = ShivTheme.colors.textSecondary, textAlign = TextAlign.Center)
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = {
+                        val token = familyManager.generatePairingToken(15)
+                        Toast.makeText(context, "New token generated: $token", Toast.LENGTH_SHORT).show()
+                    },
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Regenerate Token")
+                }
             }
         }
 
@@ -1638,7 +1650,7 @@ fun FamilyAccountLinkingTab(familyManager: FamilyManager) {
                 OutlinedTextField(
                     value = enterCodeInput,
                     onValueChange = { enterCodeInput = it.uppercase() },
-                    placeholder = { Text("e.g. SHIV-4921") },
+                    placeholder = { Text("e.g. SHIV-XXXX-XXXX-TIME") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp)
@@ -1647,10 +1659,11 @@ fun FamilyAccountLinkingTab(familyManager: FamilyManager) {
                 Button(
                     onClick = {
                         if (enterCodeInput.isNotBlank()) {
-                            familyManager.setPairingCode(enterCodeInput)
-                            familyManager.triggerCloudSync()
-                            Toast.makeText(context, "Pairing with Parent confirmed!", Toast.LENGTH_SHORT).show()
-                            enterCodeInput = ""
+                            val result = familyManager.verifyAndCompletePairing(enterCodeInput)
+                            Toast.makeText(context, result.message, Toast.LENGTH_LONG).show()
+                            if (result.success) {
+                                enterCodeInput = ""
+                            }
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),

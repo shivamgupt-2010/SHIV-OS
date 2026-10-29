@@ -29,8 +29,16 @@ import com.example.ui.tools.ToolsScreen
 class LauncherActivity : ComponentActivity() {
     private val currentRouteFlow = kotlinx.coroutines.flow.MutableStateFlow("launcher")
 
+    companion object {
+        const val APPWIDGET_HOST_ID = 2048
+    }
+
+    private lateinit var appWidgetHost: android.appwidget.AppWidgetHost
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        appWidgetHost = android.appwidget.AppWidgetHost(this, APPWIDGET_HOST_ID)
+        try { appWidgetHost.startListening() } catch (e: Exception) { e.printStackTrace() }
         handleAuthRedirect(intent)
         enableEdgeToEdge()
 
@@ -61,7 +69,8 @@ class LauncherActivity : ComponentActivity() {
                                 appContainer.appLockManager,
                                 appContainer.wellbeingManager,
                                 appContainer.familyManager,
-                                appContainer.wallpaperEngine
+                                appContainer.wallpaperEngine,
+                                appContainer.gestureManager
                             ) as T
                         }
                     }
@@ -88,6 +97,21 @@ class LauncherActivity : ComponentActivity() {
                     mutableStateOf(!appContainer.appLockManager.isShivLockEnabled() || !appContainer.appLockManager.isMasterPinSet())
                 }
 
+                val preventRecentsPreview by appContainer.appLockManager.preventRecentTasksPreview.collectAsState()
+                val lockedPkg by launcherViewModel.pendingAppLock.collectAsState()
+                val isShivLockActive = appContainer.appLockManager.isShivLockEnabled() && appContainer.appLockManager.isMasterPinSet()
+                val requiresAuthGate = isShivLockActive && !isSessionAuthenticated
+
+                // Dynamic Window FLAG_SECURE: Prevents recent-tasks snapshot leak of sensitive contents
+                DisposableEffect(preventRecentsPreview, lockedPkg, requiresAuthGate) {
+                    if (preventRecentsPreview || lockedPkg != null || requiresAuthGate) {
+                        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+                    } else {
+                        window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+                    }
+                    onDispose { }
+                }
+
                 // Lock screen safety check: only lock if user has explicitly enabled SHIV Lock
                 DisposableEffect(Unit) {
                     val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
@@ -105,9 +129,6 @@ class LauncherActivity : ComponentActivity() {
                 val hasSeenOnboardingState = remember {
                     mutableStateOf(prefs.getBoolean("has_seen_onboarding", false))
                 }
-
-                val isShivLockActive = appContainer.appLockManager.isShivLockEnabled() && appContainer.appLockManager.isMasterPinSet()
-                val requiresAuthGate = isShivLockActive && !isSessionAuthenticated
 
                 if (requiresAuthGate) {
                     com.example.ui.auth.AuthGateScreen(
@@ -227,7 +248,12 @@ class LauncherActivity : ComponentActivity() {
                                         },
                                         onOpenSidebar = { coroutineScope.launch { drawerState.open() } }
                                     )
-                                    "notes" -> NotesScreen(
+                                    "notes" -> {
+                                        val notesVm = remember {
+                                            com.example.ui.notes.NotesViewModel(appContainer.appDatabase.noteDao())
+                                        }
+                                        NotesScreen(
+                                            viewModel = notesVm,
                                         onNavigate = { nextRoute ->
                                             if (nextRoute == "settings") {
                                                 startActivity(Intent(this@LauncherActivity, com.example.ui.settings.SettingsActivity::class.java))
@@ -236,7 +262,8 @@ class LauncherActivity : ComponentActivity() {
                                             }
                                         },
                                         onOpenSidebar = { coroutineScope.launch { drawerState.open() } }
-                                    )
+                                        )
+                                    }
                                     "tools" -> ToolsScreen(
                                         onNavigate = { nextRoute ->
                                             if (nextRoute == "settings") {
@@ -268,6 +295,7 @@ class LauncherActivity : ComponentActivity() {
                                         themeEngine = appContainer.studioThemeEngine,
                                         layoutManager = appContainer.layoutManager,
                                         wallpaperEngine = appContainer.wallpaperEngine,
+                                        gestureManager = appContainer.gestureManager,
                                         onBack = { currentRouteFlow.value = "launcher" }
                                     )
                                     "safety_security" -> com.example.ui.security.SafetySecurityCenterScreen(
@@ -394,5 +422,25 @@ class LauncherActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        val appContainer = (application as? ShivAiApplication)?.container
+        appContainer?.appLockManager?.onActivityPaused()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        val appContainer = (application as? ShivAiApplication)?.container
+        val keyguardManager = getSystemService(android.content.Context.KEYGUARD_SERVICE) as? android.app.KeyguardManager
+        if (keyguardManager?.isKeyguardLocked == true) {
+            appContainer?.appLockManager?.onScreenTurnedOff()
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        try { appWidgetHost.stopListening() } catch (e: Exception) { e.printStackTrace() }
     }
 }

@@ -49,6 +49,7 @@ fun StudioScreen(
     themeEngine: StudioThemeEngine,
     layoutManager: LayoutManager? = null,
     wallpaperEngine: com.example.core.studio.WallpaperEngine? = null,
+    gestureManager: com.example.core.launcher.GestureManager? = null,
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
@@ -740,17 +741,110 @@ fun StudioScreen(
                             inactiveTrackColor = ShivTheme.colors.surfaceVariant
                         )
                     )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Installed Icon Packs", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = ShivTheme.colors.textPrimary)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    val installedPacks = remember { com.example.core.launcher.AppIconManager.getInstalledIconPacks(context) }
+                    var activePack by remember { mutableStateOf(com.example.core.launcher.AppIconManager.activeIconPackPackage) }
+
+                    // System Default Pack
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .clickable {
+                                activePack = null
+                                com.example.core.launcher.AppIconManager.setActiveIconPack(null)
+                                Toast.makeText(context, "System Adaptive Icons restored", Toast.LENGTH_SHORT).show()
+                            },
+                        color = if (activePack == null) ShivTheme.colors.primary.copy(alpha = 0.2f) else ShivTheme.colors.surfaceVariant.copy(alpha = 0.6f),
+                        shape = RoundedCornerShape(14.dp),
+                        border = BorderStroke(1.dp, if (activePack == null) ShivTheme.colors.primary else ShivTheme.colors.cardBorder.copy(alpha = 0.4f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.Android, contentDescription = null, tint = ShivTheme.colors.primary, modifier = Modifier.size(24.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("System Default (Adaptive)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = ShivTheme.colors.textPrimary)
+                                Text("Standard Android adaptive icons with shape masking", style = MaterialTheme.typography.labelSmall, color = ShivTheme.colors.textSecondary)
+                            }
+                            if (activePack == null) {
+                                Icon(Icons.Default.Check, contentDescription = "Active", tint = ShivTheme.colors.primary)
+                            }
+                        }
+                    }
+
+                    if (installedPacks.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        installedPacks.forEach { pack ->
+                            val isPackSelected = activePack == pack.packageName
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .clickable {
+                                        activePack = pack.packageName
+                                        com.example.core.launcher.AppIconManager.setActiveIconPack(pack.packageName)
+                                        Toast.makeText(context, "Applied ${pack.label} icon pack", Toast.LENGTH_SHORT).show()
+                                    },
+                                color = if (isPackSelected) ShivTheme.colors.primary.copy(alpha = 0.2f) else ShivTheme.colors.surfaceVariant.copy(alpha = 0.6f),
+                                shape = RoundedCornerShape(14.dp),
+                                border = BorderStroke(1.dp, if (isPackSelected) ShivTheme.colors.primary else ShivTheme.colors.cardBorder.copy(alpha = 0.4f))
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(14.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(Icons.Default.Palette, contentDescription = null, tint = ShivTheme.colors.accent, modifier = Modifier.size(24.dp))
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(pack.label, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = ShivTheme.colors.textPrimary)
+                                        Text(pack.packageName, style = MaterialTheme.typography.labelSmall, color = ShivTheme.colors.textSecondary)
+                                    }
+                                    if (isPackSelected) {
+                                        Icon(Icons.Default.Check, contentDescription = "Active", tint = ShivTheme.colors.primary)
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            "No 3rd-party icon packs detected. Install any Nova/Apex compatible icon pack from Google Play to customize individual app icons.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = ShivTheme.colors.textSecondary
+                        )
+                    }
                 }
 
                 // TAB 3: WIDGETS
                 if (selectedTab == 3) {
                     Text("Home Screen Widgets & Indicators", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = ShivTheme.colors.textPrimary)
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(theme.cardCornerRadiusDp.dp),
                         colors = CardDefaults.cardColors(containerColor = ShivTheme.colors.surfaceVariant.copy(alpha = 0.6f))
                     ) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                            Text("Interactive Clock Gallery", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = ShivTheme.colors.primary)
+                            
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                com.example.ui.widgets.AnalogClockWidget()
+                            }
+
+                            HorizontalDivider(color = ShivTheme.colors.cardBorder.copy(alpha = 0.4f))
+
                             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text("ShivAI Cognitive Capsule", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = ShivTheme.colors.textPrimary)
@@ -763,8 +857,18 @@ fun StudioScreen(
 
                             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text("Live Digital Clock", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = ShivTheme.colors.textPrimary)
-                                    Text("Minimalist typographic clock with breathing glow", style = MaterialTheme.typography.bodySmall, color = ShivTheme.colors.textSecondary)
+                                    Text("Agenda & Calendar Glance", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = ShivTheme.colors.textPrimary)
+                                    Text("Displays current date, day of week & schedule", style = MaterialTheme.typography.bodySmall, color = ShivTheme.colors.textSecondary)
+                                }
+                                Switch(checked = true, onCheckedChange = {})
+                            }
+
+                            HorizontalDivider(color = ShivTheme.colors.cardBorder.copy(alpha = 0.4f))
+
+                            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Quick Note & Doodle Glance", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = ShivTheme.colors.textPrimary)
+                                    Text("One-tap access to rich notes and sketch canvas", style = MaterialTheme.typography.bodySmall, color = ShivTheme.colors.textSecondary)
                                 }
                                 Switch(checked = true, onCheckedChange = {})
                             }
@@ -774,37 +878,94 @@ fun StudioScreen(
 
                 // TAB 4: GESTURES
                 if (selectedTab == 4) {
-                    Text("Launcher Touch Gestures", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = ShivTheme.colors.textPrimary)
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(theme.cardCornerRadiusDp.dp),
-                        colors = CardDefaults.cardColors(containerColor = ShivTheme.colors.surfaceVariant.copy(alpha = 0.6f))
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.SwipeUp, contentDescription = null, tint = ShivTheme.colors.primary)
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text("Swipe Up", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = ShivTheme.colors.textPrimary)
-                                    Text("Opens All Apps Drawer with private search", style = MaterialTheme.typography.bodySmall, color = ShivTheme.colors.textSecondary)
+                    var selectedGestureForEdit by remember { mutableStateOf<com.example.core.launcher.LauncherGesture?>(null) }
+                    val gestureMappings = gestureManager?.mappings?.collectAsState()?.value ?: emptyMap()
+
+                    if (selectedGestureForEdit != null) {
+                        val currentTargetGesture = selectedGestureForEdit!!
+                        AlertDialog(
+                            onDismissRequest = { selectedGestureForEdit = null },
+                            title = { Text("Assign Action for ${currentTargetGesture.title}") },
+                            text = {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    com.example.core.launcher.GestureAction.entries.forEach { action ->
+                                        val isChosen = gestureMappings[currentTargetGesture] == action
+                                        Surface(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(10.dp))
+                                                .clickable {
+                                                    gestureManager?.setGestureAction(currentTargetGesture, action)
+                                                    selectedGestureForEdit = null
+                                                    Toast.makeText(context, "${currentTargetGesture.title} set to ${action.title}", Toast.LENGTH_SHORT).show()
+                                                },
+                                            color = if (isChosen) ShivTheme.colors.primary.copy(alpha = 0.2f) else Color.Transparent
+                                        ) {
+                                            Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                                RadioButton(selected = isChosen, onClick = null)
+                                                Spacer(modifier = Modifier.width(10.dp))
+                                                Text(action.title, color = ShivTheme.colors.textPrimary, style = MaterialTheme.typography.bodyMedium)
+                                            }
+                                        }
+                                    }
                                 }
+                            },
+                            confirmButton = {
+                                TextButton(onClick = { selectedGestureForEdit = null }) { Text("Cancel") }
                             }
-                            HorizontalDivider(color = ShivTheme.colors.cardBorder.copy(alpha = 0.4f))
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.TouchApp, contentDescription = null, tint = ShivTheme.colors.accent)
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text("Long Press Empty Area", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = ShivTheme.colors.textPrimary)
-                                    Text("Opens Home Screen Options and Edit Modal", style = MaterialTheme.typography.bodySmall, color = ShivTheme.colors.textSecondary)
-                                }
-                            }
-                            HorizontalDivider(color = ShivTheme.colors.cardBorder.copy(alpha = 0.4f))
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.SmartButton, contentDescription = null, tint = ShivaAmber)
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text("Long Press App Icon", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = ShivTheme.colors.textPrimary)
-                                    Text("Access SHIV Lock, App Details, and Uninstall", style = MaterialTheme.typography.bodySmall, color = ShivTheme.colors.textSecondary)
+                        )
+                    }
+
+                    Text("Custom Touch Gesture Mapping", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = ShivTheme.colors.textPrimary)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("Tap any gesture below to reassign its triggered action", style = MaterialTheme.typography.bodySmall, color = ShivTheme.colors.textSecondary)
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        com.example.core.launcher.LauncherGesture.entries.forEach { gesture ->
+                            val currentAction = gestureMappings[gesture] ?: com.example.core.launcher.GestureAction.NONE
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(theme.cardCornerRadiusDp.dp))
+                                    .clickable { selectedGestureForEdit = gesture },
+                                color = ShivTheme.colors.surfaceVariant.copy(alpha = 0.6f),
+                                shape = RoundedCornerShape(theme.cardCornerRadiusDp.dp),
+                                border = BorderStroke(1.dp, ShivTheme.colors.cardBorder.copy(alpha = 0.35f))
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(14.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = when (gesture) {
+                                            com.example.core.launcher.LauncherGesture.SWIPE_UP -> Icons.Default.SwipeUp
+                                            com.example.core.launcher.LauncherGesture.SWIPE_DOWN -> Icons.Default.SwipeDown
+                                            com.example.core.launcher.LauncherGesture.DOUBLE_TAP -> Icons.Default.TouchApp
+                                            com.example.core.launcher.LauncherGesture.PINCH_IN -> Icons.Default.Pinch
+                                            com.example.core.launcher.LauncherGesture.TWO_FINGER_SWIPE_DOWN -> Icons.Default.SwipeDownAlt
+                                        },
+                                        contentDescription = null,
+                                        tint = ShivTheme.colors.primary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(gesture.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = ShivTheme.colors.textPrimary)
+                                        Text(gesture.description, style = MaterialTheme.typography.labelSmall, color = ShivTheme.colors.textSecondary)
+                                    }
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = ShivTheme.colors.primary.copy(alpha = 0.15f),
+                                        border = BorderStroke(1.dp, ShivTheme.colors.primary.copy(alpha = 0.35f))
+                                    ) {
+                                        Text(
+                                            text = currentAction.title,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                            color = ShivTheme.colors.primary
+                                        )
+                                    }
                                 }
                             }
                         }

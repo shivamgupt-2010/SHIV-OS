@@ -19,9 +19,10 @@ import com.example.data.local.entity.*
         AppLockPolicyEntity::class,
         WellbeingBudgetEntity::class,
         FamilyPolicyEntity::class,
-        SyncQueueEntity::class
+        SyncQueueEntity::class,
+        NoteEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -37,4 +38,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun wellbeingDao(): WellbeingDao
     abstract fun familyPolicyDao(): FamilyPolicyDao
     abstract fun syncQueueDao(): SyncQueueDao
+    abstract fun noteDao(): NoteDao
 }

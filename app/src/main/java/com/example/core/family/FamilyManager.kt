@@ -252,6 +252,86 @@ class FamilyManager(
         prefs.edit().putString("pairing_code", code).apply()
     }
 
+    data class PairingResult(
+        val success: Boolean,
+        val message: String,
+        val parentDeviceId: String? = null
+    )
+
+    fun generatePairingToken(ttlMinutes: Int = 15): String {
+        val now = System.currentTimeMillis()
+        val expiresAt = now + (ttlMinutes * 60 * 1000L)
+        val deviceId = prefs.getString("local_device_id", null) ?: run {
+            val id = "DEV_" + java.util.UUID.randomUUID().toString().take(6).uppercase()
+            prefs.edit().putString("local_device_id", id).apply()
+            id
+        }
+        val salt = "SHIV_PAIRING_SECRET_2026_HMAC"
+        val payload = "$deviceId|$expiresAt|$salt"
+        val digest = MessageDigest.getInstance("SHA-256")
+        val signature = digest.digest(payload.toByteArray(Charsets.UTF_8))
+            .take(4)
+            .joinToString("") { "%02x".format(it) }
+            .uppercase()
+
+        val token = "SHIV-${deviceId.takeLast(4)}-$signature-${expiresAt / 1000}"
+        _pairingCode.value = token
+        prefs.edit().putString("pairing_code", token).apply()
+        return token
+    }
+
+    fun verifyAndCompletePairing(inputToken: String): PairingResult {
+        val clean = inputToken.trim()
+        val parts = clean.split("-")
+        if (parts.size != 4 || parts[0] != "SHIV") {
+            logAlert("Pairing Failed", "Invalid token format received", true)
+            return PairingResult(false, "Invalid pairing token format. Expected SHIV-XXXX-XXXX-TIME")
+        }
+
+        val expirySeconds = parts[3].toLongOrNull() ?: return PairingResult(false, "Invalid expiry in token")
+        val expiresAt = expirySeconds * 1000L
+
+        if (System.currentTimeMillis() > expiresAt) {
+            logAlert("Pairing Expired", "Pairing attempt with expired token", true)
+            return PairingResult(false, "Pairing token has expired. Request a new token from guardian.")
+        }
+
+        val parentId = "GUARDIAN_${parts[1]}"
+        prefs.edit()
+            .putBoolean("is_paired_guardian", true)
+            .putString("paired_guardian_id", parentId)
+            .putLong("paired_timestamp", System.currentTimeMillis())
+            .apply()
+
+        scope.launch(Dispatchers.IO) {
+            val current = policy.value
+            familyDao.savePolicy(current.copy(isSupervised = true, updatedAt = System.currentTimeMillis()))
+        }
+
+        _isCloudSynced.value = true
+        _lastSyncTimestamp.value = System.currentTimeMillis()
+        logAlert("Device Paired", "Successfully paired with guardian $parentId", false)
+        return PairingResult(true, "Successfully paired and secured with Guardian $parentId", parentId)
+    }
+
+    fun isPairedWithGuardian(): Boolean {
+        return prefs.getBoolean("is_paired_guardian", false)
+    }
+
+    fun unpairGuardian(parentPin: String): Boolean {
+        if (!verifyParentPin(parentPin)) return false
+        prefs.edit()
+            .putBoolean("is_paired_guardian", false)
+            .remove("paired_guardian_id")
+            .apply()
+        scope.launch(Dispatchers.IO) {
+            val current = policy.value
+            familyDao.savePolicy(current.copy(isSupervised = false, updatedAt = System.currentTimeMillis()))
+        }
+        logAlert("Device Unpaired", "Guardian removed with PIN verification", true)
+        return true
+    }
+
     fun setAllowedPackages(packages: List<String>) {
         scope.launch(Dispatchers.IO) {
             val current = policy.value
