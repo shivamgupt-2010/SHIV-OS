@@ -258,7 +258,9 @@ fun AuthGateScreen(
 
                     LockMethod.PATTERN -> {
                         PatternLockView(
-                            onPatternCompleted = { pattern ->
+                            hasError = errorMessage != null,
+                            modifier = Modifier.size(280.dp),
+                            onPatternComplete = { pattern ->
                                 if (remainingLockout > 0) return@PatternLockView
                                 errorMessage = null
                                 if (appLockManager.verifyMasterPattern(pattern)) {
@@ -267,9 +269,7 @@ fun AuthGateScreen(
                                 } else {
                                     errorMessage = "Pattern incorrect"
                                 }
-                            },
-                            isError = errorMessage != null,
-                            modifier = Modifier.size(280.dp)
+                            }
                         )
                     }
 

@@ -39,7 +39,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import coil.compose.AsyncImage
 import com.example.data.local.entity.NoteEntity
 import com.example.ui.components.CosmicBackground
 import com.example.ui.components.TrishulIcon
@@ -577,12 +576,29 @@ fun RichNoteEditorDialog(
                                                 .size(110.dp)
                                                 .clip(RoundedCornerShape(12.dp))
                                         ) {
-                                            AsyncImage(
-                                                model = uriStr,
-                                                contentDescription = null,
-                                                modifier = Modifier.fillMaxSize(),
-                                                contentScale = ContentScale.Crop
-                                            )
+                                            val bmp = remember(uriStr) {
+                                                try {
+                                                    val stream = context.contentResolver.openInputStream(android.net.Uri.parse(uriStr))
+                                                    android.graphics.BitmapFactory.decodeStream(stream)?.asImageBitmap()
+                                                } catch (e: Exception) {
+                                                    null
+                                                }
+                                            }
+                                            if (bmp != null) {
+                                                Image(
+                                                    bitmap = bmp,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.fillMaxSize(),
+                                                    contentScale = ContentScale.Crop
+                                                )
+                                            } else {
+                                                Box(
+                                                    modifier = Modifier.fillMaxSize().background(ShivTheme.colors.surfaceVariant),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Icon(Icons.Default.Image, contentDescription = null, tint = ShivTheme.colors.textSecondary)
+                                                }
+                                            }
                                             IconButton(
                                                 onClick = { imageUris = imageUris.filter { it != uriStr } },
                                                 modifier = Modifier
