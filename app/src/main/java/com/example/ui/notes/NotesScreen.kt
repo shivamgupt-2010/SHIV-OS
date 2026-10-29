@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -419,6 +420,7 @@ fun RichNoteEditorDialog(
     viewModel: NotesViewModel,
     onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
     var title by remember { mutableStateOf(initialNote.title) }
     var content by remember { mutableStateOf(initialNote.content) }
     var category by remember { mutableStateOf(initialNote.category) }
