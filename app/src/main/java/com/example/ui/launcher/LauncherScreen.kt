@@ -616,6 +616,7 @@ fun ShivOSLiteLauncherScreen(
                                 app = app,
                                 iconShape = currentTheme.iconShape,
                                 scalePercent = currentTheme.iconScalePercent,
+                                activeIconPack = currentTheme.activeIconPack,
                                 isDock = false,
                                 onClick = { viewModel.onAppClicked(app.packageName) },
                                 onLongClick = { selectedAppForOptions = app }
@@ -672,6 +673,7 @@ fun ShivOSLiteLauncherScreen(
                                 app = app,
                                 iconShape = currentTheme.iconShape,
                                 scalePercent = currentTheme.iconScalePercent,
+                                activeIconPack = currentTheme.activeIconPack,
                                 onClick = { viewModel.onAppClicked(app.packageName) },
                                 onLongClick = { selectedAppForOptions = app }
                             )
@@ -706,6 +708,7 @@ fun ShivOSLiteLauncherScreen(
                                     app = app,
                                     iconShape = currentTheme.iconShape,
                                     scalePercent = currentTheme.iconScalePercent,
+                                    activeIconPack = currentTheme.activeIconPack,
                                     isDock = true,
                                     onClick = { viewModel.onAppClicked(app.packageName) },
                                     onLongClick = { selectedAppForOptions = app }
@@ -1058,18 +1061,17 @@ fun AppGridItemWithLongPress(
     app: AppInfo,
     iconShape: String = "SQUIRCLE",
     scalePercent: Int = 100,
+    activeIconPack: String = "PACK_NEBULA",
     isDock: Boolean = false,
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
     val context = LocalContext.current
-    val cachedIcon = remember(app.packageName, iconShape) {
+    val cachedIcon = remember(app.packageName, iconShape, activeIconPack) {
         com.example.core.launcher.AppIconManager.getCachedIcon(app.packageName, iconShape)
     }
-    val appIcon = produceState(initialValue = cachedIcon, key1 = app.packageName, key2 = iconShape) {
-        if (value == null) {
-            value = com.example.core.launcher.AppIconManager.loadIcon(context, app.packageName, iconShape)
-        }
+    val appIcon = produceState(initialValue = cachedIcon, key1 = app.packageName, key2 = iconShape, key3 = activeIconPack) {
+        value = com.example.core.launcher.AppIconManager.loadIcon(context, app.packageName, iconShape)
     }.value
 
     val shapeCorner = when (iconShape) {

@@ -74,8 +74,9 @@ fun StudioScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Appearance", "Layout", "Icons", "Widgets", "Gestures", "Animations", "Profiles")
 
+    var previewThemeTarget by remember { mutableStateOf<com.example.core.studio.ThemePreset?>(null) }
     var selectedCategoryFilter by remember { mutableStateOf("All") }
-    val categoryFilters = listOf("All", "Light", "Dark", "Expressive", "Adaptive", "Custom")
+    val categoryFilters = listOf("All", "Signature", "Light", "Dark", "Expressive", "Adaptive", "Custom")
 
     var showImportDialog by remember { mutableStateOf(false) }
     var importText by remember { mutableStateOf("") }
@@ -349,6 +350,106 @@ fun StudioScreen(
                             }
                         }
                     }
+
+                    // 6 MARQUEE SIGNATURE THEMES
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Signature Themes (6)",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = ShivTheme.colors.textPrimary
+                        )
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = ShivTheme.colors.primary.copy(alpha = 0.2f)
+                        ) {
+                            Text(
+                                "FEATURED",
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                                color = ShivTheme.colors.primary
+                            )
+                        }
+                    }
+                    Text(
+                        "Complete cohesive operating aesthetics: palette, layout, widgets & motion",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = ShivTheme.colors.textSecondary
+                    )
+
+                    val signatureKeys = listOf("NEBULA", "AURA", "PRISM", "FORGE", "NOIR_LUXE", "DAYBREAK")
+                    val signaturePresets = signatureKeys.mapNotNull { com.example.core.studio.StudioThemeTokens.PRESETS[it] }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        signaturePresets.forEach { sigPreset ->
+                            val isSelected = theme.themePreset == sigPreset.key
+                            Surface(
+                                modifier = Modifier
+                                    .width(180.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .clickable { previewThemeTarget = sigPreset },
+                                color = if (isSelected) ShivTheme.colors.surfaceVariant else ShivTheme.colors.surface.copy(alpha = 0.7f),
+                                shape = RoundedCornerShape(16.dp),
+                                border = BorderStroke(1.5.dp, if (isSelected) ShivTheme.colors.primary else sigPreset.accent.copy(alpha = 0.4f))
+                            ) {
+                                Column(modifier = Modifier.padding(12.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            sigPreset.name,
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = ShivTheme.colors.textPrimary
+                                        )
+                                        if (isSelected) {
+                                            Icon(Icons.Default.CheckCircle, contentDescription = "Active", tint = ShivTheme.colors.primary, modifier = Modifier.size(16.dp))
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    // 4-Color Swatch Preview
+                                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        Box(modifier = Modifier.size(18.dp).clip(CircleShape).background(sigPreset.primary))
+                                        Box(modifier = Modifier.size(18.dp).clip(CircleShape).background(sigPreset.accent))
+                                        Box(modifier = Modifier.size(18.dp).clip(CircleShape).background(sigPreset.surface))
+                                        Box(modifier = Modifier.size(18.dp).clip(CircleShape).background(sigPreset.background))
+                                    }
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            if (sigPreset.isDark) "Dark Mode" else "Light Mode",
+                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                            color = ShivTheme.colors.textSecondary
+                                        )
+                                        FilledTonalButton(
+                                            onClick = { themeEngine.applyPreset(sigPreset.key) },
+                                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                            shape = RoundedCornerShape(8.dp)
+                                        ) {
+                                            Text(if (isSelected) "Active" else "Apply", fontSize = 11.sp)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     // Category Filter Tabs (Light, Dark, Expressive, Adaptive, Custom)
                     Row(
@@ -743,7 +844,88 @@ fun StudioScreen(
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("Installed Icon Packs", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = ShivTheme.colors.textPrimary)
+                    // 6 SIGNATURE ICON PACKS
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Signature Icon Packs (6)",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = ShivTheme.colors.textPrimary
+                        )
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = ShivTheme.colors.primary.copy(alpha = 0.2f)
+                        ) {
+                            Text(
+                                "ARTISAN",
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                                color = ShivTheme.colors.primary
+                            )
+                        }
+                    }
+                    Text(
+                        "Independent icon packs with native canvas shaders, glowing edges & 100% app coverage",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = ShivTheme.colors.textSecondary
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    val signaturePacks = com.example.core.studio.StudioIconPackTokens.PACKS
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        signaturePacks.forEach { sigPack ->
+                            val isPackActive = theme.activeIconPack == sigPack.key && com.example.core.launcher.AppIconManager.activeIconPackPackage == null
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .clickable {
+                                        com.example.core.launcher.AppIconManager.setActiveIconPack(null)
+                                        themeEngine.setActiveIconPack(sigPack.key)
+                                        Toast.makeText(context, "${sigPack.name} applied!", Toast.LENGTH_SHORT).show()
+                                    },
+                                color = if (isPackActive) ShivTheme.colors.surfaceVariant else ShivTheme.colors.surface.copy(alpha = 0.6f),
+                                shape = RoundedCornerShape(14.dp),
+                                border = BorderStroke(1.5.dp, if (isPackActive) ShivTheme.colors.primary else ShivTheme.colors.cardBorder.copy(alpha = 0.4f))
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(14.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        sigPack.sampleColors.forEach { col ->
+                                            Box(modifier = Modifier.size(16.dp).clip(CircleShape).background(col))
+                                            Spacer(modifier = Modifier.width(3.dp))
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(sigPack.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = ShivTheme.colors.textPrimary)
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Surface(
+                                                shape = RoundedCornerShape(6.dp),
+                                                color = ShivTheme.colors.primary.copy(alpha = 0.15f)
+                                            ) {
+                                                Text(sigPack.badge, modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp), style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.Bold), color = ShivTheme.colors.primary)
+                                            }
+                                        }
+                                        Text(sigPack.description, style = MaterialTheme.typography.labelSmall, color = ShivTheme.colors.textSecondary)
+                                    }
+                                    if (isPackActive) {
+                                        Icon(Icons.Default.CheckCircle, contentDescription = "Active", tint = ShivTheme.colors.primary)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Installed Third-Party Icon Packs", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = ShivTheme.colors.textPrimary)
                     Spacer(modifier = Modifier.height(6.dp))
                     val installedPacks = remember { com.example.core.launcher.AppIconManager.getInstalledIconPacks(context) }
                     var activePack by remember { mutableStateOf(com.example.core.launcher.AppIconManager.activeIconPackPackage) }
@@ -1212,6 +1394,108 @@ fun StudioScreen(
                         Text("Cancel")
                     }
                 }
+            )
+        }
+
+        // Live Theme Preview & Apply Modal Dialog
+        if (previewThemeTarget != null) {
+            val target = previewThemeTarget!!
+            AlertDialog(
+                onDismissRequest = { previewThemeTarget = null },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            themeEngine.applyPreset(target.key)
+                            previewThemeTarget = null
+                            Toast.makeText(context, "${target.name} applied!", Toast.LENGTH_SHORT).show()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = target.primary)
+                    ) {
+                        Text("Apply Theme", color = if (target.isDark) Color(0xFF0F172A) else Color.White, fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { previewThemeTarget = null }) {
+                        Text("Cancel", color = ShivTheme.colors.textSecondary)
+                    }
+                },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(target.name, fontWeight = FontWeight.Bold, color = ShivTheme.colors.textPrimary)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = target.primary.copy(alpha = 0.2f)
+                        ) {
+                            Text(target.category, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold), color = target.primary)
+                        }
+                    }
+                },
+                text = {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Text("Live Home-Screen Preview", style = MaterialTheme.typography.labelMedium, color = ShivTheme.colors.textSecondary)
+                        Spacer(modifier = Modifier.height(10.dp))
+                        
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(16.dp)),
+                            color = target.background,
+                            border = BorderStroke(1.5.dp, target.cardBorder)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    "10:59",
+                                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = target.primary
+                                )
+                                Text(
+                                    "Thursday, October 29",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = target.textSecondary
+                                )
+                                Spacer(modifier = Modifier.height(14.dp))
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = target.surface,
+                                    border = BorderStroke(1.dp, target.accent.copy(alpha = 0.4f))
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(Icons.Default.Search, contentDescription = null, tint = target.accent, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Search or ask ShivAI...", style = MaterialTheme.typography.bodySmall, color = target.textSecondary)
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(14.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceEvenly
+                                ) {
+                                    listOf(
+                                        Pair("Primary", target.primary),
+                                        Pair("Accent", target.accent),
+                                        Pair("Surface", target.surface),
+                                        Pair("Background", target.background)
+                                    ).forEach { (label, col) ->
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Box(modifier = Modifier.size(22.dp).clip(CircleShape).background(col).border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape))
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(label, style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp), color = target.textSecondary)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                containerColor = ShivTheme.colors.surface
             )
         }
 

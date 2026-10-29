@@ -26,8 +26,150 @@ data class ThemePreset(
     val isDark: Boolean = true
 )
 
+data class SignatureIconPack(
+    val key: String,
+    val name: String,
+    val description: String,
+    val paletteDescription: String,
+    val sampleColors: List<Color>,
+    val badge: String = "SIGNATURE"
+)
+
+object StudioIconPackTokens {
+    val PACKS: List<SignatureIconPack> = listOf(
+        SignatureIconPack(
+            key = "PACK_NEBULA",
+            name = "Nebula Icons",
+            description = "Neon line art, glowing edges, cyber aesthetics",
+            paletteDescription = "Violet, Cyan, Deep Obsidian",
+            sampleColors = listOf(Color(0xFF55E7FF), Color(0xFF7657FF), Color(0xFF090D1F))
+        ),
+        SignatureIconPack(
+            key = "PACK_MONOFORM",
+            name = "Monoform",
+            description = "Minimal monochrome line art, soft geometric shapes, clean silhouettes",
+            paletteDescription = "Matte Black, Crisp White, Charcoal",
+            sampleColors = listOf(Color(0xFFFFFFFF), Color(0xFF18181B), Color(0xFF71717A))
+        ),
+        SignatureIconPack(
+            key = "PACK_POPFORM",
+            name = "Popform",
+            description = "Bold geometric Bauhaus color-blocked icons",
+            paletteDescription = "Coral, Cobalt, Lemon, Mint",
+            sampleColors = listOf(Color(0xFFFF725E), Color(0xFF4169FF), Color(0xFFFFE66D), Color(0xFF34D399))
+        ),
+        SignatureIconPack(
+            key = "PACK_GLASSCORE",
+            name = "Glasscore",
+            description = "Translucent frosted glass depth, refractive specular bevels",
+            paletteDescription = "Frosted Graphite, Silver, Amber Specular",
+            sampleColors = listOf(Color(0xFFE2E8F0), Color(0xFF353A40), Color(0xFFFFB547))
+        ),
+        SignatureIconPack(
+            key = "PACK_ATELIER",
+            name = "Atelier",
+            description = "Refined editorial crests, bespoke luxury filigree",
+            paletteDescription = "Champagne Gold, Forest Green, Burgundy",
+            sampleColors = listOf(Color(0xFFD8BD80), Color(0xFF174C3C), Color(0xFF54121E))
+        ),
+        SignatureIconPack(
+            key = "PACK_SOFTCRAFT",
+            name = "Softcraft",
+            description = "Tactile rounded 3D claymorphic puffy marshmallow icons",
+            paletteDescription = "Sky Blue, Peach, Cream, Lilac",
+            sampleColors = listOf(Color(0xFF93C5FD), Color(0xFFFDBA74), Color(0xFFDDD6FE))
+        )
+    )
+}
+
 object StudioThemeTokens {
     val PRESETS: Map<String, ThemePreset> = linkedMapOf(
+        // --- 6 MARQUEE SIGNATURE THEMES ---
+        "NEBULA" to ThemePreset(
+            key = "NEBULA",
+            name = "Nebula",
+            category = "SIGNATURE",
+            primary = Color(0xFF7657FF),
+            accent = Color(0xFF55E7FF),
+            surface = Color(0xFF12172F),
+            background = Color(0xFF090D1F),
+            surfaceVariant = Color(0xFF1A203F),
+            cardBorder = Color(0x6655E7FF),
+            textPrimary = Color(0xFFF0F3FF),
+            textSecondary = Color(0xFF8E9BB8),
+            isDark = true
+        ),
+        "AURA" to ThemePreset(
+            key = "AURA",
+            name = "Aura",
+            category = "SIGNATURE",
+            primary = Color(0xFF879879),
+            accent = Color(0xFF4E6048),
+            surface = Color(0xFFECE6D8),
+            background = Color(0xFFF5F1E8),
+            surfaceVariant = Color(0xFFDFD7C4),
+            cardBorder = Color(0x4D879879),
+            textPrimary = Color(0xFF272B26),
+            textSecondary = Color(0xFF5B6458),
+            isDark = false
+        ),
+        "PRISM" to ThemePreset(
+            key = "PRISM",
+            name = "Prism",
+            category = "SIGNATURE",
+            primary = Color(0xFF4169FF),
+            accent = Color(0xFFFF725E),
+            surface = Color(0xFFF7F8FC),
+            background = Color(0xFFFFFFFF),
+            surfaceVariant = Color(0xFFEDF0FF),
+            cardBorder = Color(0x4D4169FF),
+            textPrimary = Color(0xFF1A1D2E),
+            textSecondary = Color(0xFF686D87),
+            isDark = false
+        ),
+        "FORGE" to ThemePreset(
+            key = "FORGE",
+            name = "Forge",
+            category = "SIGNATURE",
+            primary = Color(0xFFFFB547),
+            accent = Color(0xFFFF9800),
+            surface = Color(0xFF23272C),
+            background = Color(0xFF17191C),
+            surfaceVariant = Color(0xFF353A40),
+            cardBorder = Color(0x66FFB547),
+            textPrimary = Color(0xFFF2F0EA),
+            textSecondary = Color(0xFF9FA6B2),
+            isDark = true
+        ),
+        "NOIR_LUXE" to ThemePreset(
+            key = "NOIR_LUXE",
+            name = "Noir Luxe",
+            category = "SIGNATURE",
+            primary = Color(0xFFD8BD80),
+            accent = Color(0xFF174C3C),
+            surface = Color(0xFF1F1F1F),
+            background = Color(0xFF151515),
+            surfaceVariant = Color(0xFF2A2A2A),
+            cardBorder = Color(0x66D8BD80),
+            textPrimary = Color(0xFFF5F0E5),
+            textSecondary = Color(0xFFA69F91),
+            isDark = true
+        ),
+        "DAYBREAK" to ThemePreset(
+            key = "DAYBREAK",
+            name = "Daybreak",
+            category = "SIGNATURE",
+            primary = Color(0xFF3478C8),
+            accent = Color(0xFF6DB8FF),
+            surface = Color(0xFFEDF4FB),
+            background = Color(0xFFF8FBFF),
+            surfaceVariant = Color(0xFFDFECF8),
+            cardBorder = Color(0x666DB8FF),
+            textPrimary = Color(0xFF26384A),
+            textSecondary = Color(0xFF5D738A),
+            isDark = false
+        ),
+
         // --- CATEGORY A: LIGHT THEMES (8) ---
         "PURE_LIGHT" to ThemePreset(
             key = "PURE_LIGHT",
@@ -502,6 +644,14 @@ class StudioThemeEngine(
     private val themeDao: LauncherThemeDao,
     private val scope: CoroutineScope
 ) {
+    init {
+        scope.launch(Dispatchers.IO) {
+            themeDao.getThemeFlow().filterNotNull().collect { t ->
+                com.example.core.launcher.AppIconManager.setActiveIconPackKey(t.activeIconPack)
+            }
+        }
+    }
+
     val currentTheme: StateFlow<LauncherThemeEntity> = themeDao.getThemeFlow()
         .map { it ?: LauncherThemeEntity() }
         .stateIn(scope, SharingStarted.Eagerly, LauncherThemeEntity())
@@ -640,8 +790,17 @@ class StudioThemeEngine(
         }
     }
 
+    fun setActiveIconPack(packKey: String) {
+        scope.launch(Dispatchers.IO) {
+            val current = currentTheme.value
+            themeDao.saveTheme(current.copy(activeIconPack = packKey, updatedAt = System.currentTimeMillis()))
+            com.example.core.launcher.AppIconManager.setActiveIconPackKey(packKey)
+        }
+    }
+
     fun resetToDefaults() {
-        applyPreset("COSMIC_SHIVA")
+        applyPreset("NEBULA")
+        setActiveIconPack("PACK_NEBULA")
         setIconShape("SQUIRCLE")
         setIconScale(100)
         setGridDimensions(5, 4)
@@ -748,6 +907,7 @@ class StudioThemeEngine(
         json.put("gridColumns", t.gridColumns)
         json.put("dockCount", t.dockCount)
         json.put("isReducedMotion", t.isReducedMotion)
+        json.put("activeIconPack", t.activeIconPack)
         return json.toString(2)
     }
 
@@ -765,6 +925,7 @@ class StudioThemeEngine(
             val isDark = json.optBoolean("isDark", true)
             val typography = json.optString("typographyStyle", "DEFAULT")
             val animation = json.optString("animationPreset", "SMOOTH")
+            val activeIconPack = json.optString("activeIconPack", "PACK_NEBULA")
 
             // Validate hex codes
             fun validateHex(hex: String, fallback: String): String {
@@ -799,6 +960,7 @@ class StudioThemeEngine(
                     gridRows = rows,
                     gridColumns = cols,
                     dockCount = dock,
+                    activeIconPack = activeIconPack,
                     isReducedMotion = json.optBoolean("isReducedMotion", false),
                     updatedAt = System.currentTimeMillis()
                 )
