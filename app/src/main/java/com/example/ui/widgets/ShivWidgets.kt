@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -672,7 +673,7 @@ fun RenderCustomWidget(
         "WEATHER" -> CustomWeatherWidget(modifier = modifier, surfaceStyle = style)
         "AGENDA" -> CustomAgendaWidget(modifier = modifier, surfaceStyle = style)
         "MEDIA" -> CustomMediaWidget(modifier = modifier, surfaceStyle = style)
-        "SHIV_AI" -> CustomShivAiWidget(modifier = modifier, surfaceStyle = style, onTap = onTap)
+        "SHIV_AI" -> CustomShivAiWidget(modifier = modifier, surfaceStyle = style, onTap = onTap ?: {})
         else -> CustomClockWidget(modifier = modifier, surfaceStyle = style)
     }
 }
