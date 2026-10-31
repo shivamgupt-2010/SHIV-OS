@@ -214,6 +214,53 @@ class LayoutManager(
         )
     }
 
+    fun addAppWidgetWithId(
+        appWidgetId: Int,
+        packageName: String,
+        providerClass: String,
+        widthDp: Int = 4,
+        heightDp: Int = 2
+    ) {
+        scope.launch(Dispatchers.IO) {
+            if (currentTheme.value.isLayoutLocked) return@launch
+            val entity = LauncherLayoutEntity(
+                id = "appwidget_${UUID.randomUUID()}",
+                pageIndex = 0,
+                cellX = 0,
+                cellY = 0,
+                spanX = widthDp,
+                spanY = heightDp,
+                itemType = "APP_WIDGET",
+                packageName = packageName,
+                activityName = providerClass,
+                appWidgetId = appWidgetId
+            )
+            layoutDao.insertItem(entity)
+        }
+    }
+
+    fun saveHomeAppOrder(packageNames: List<String>) {
+        scope.launch(Dispatchers.IO) {
+            packageNames.forEachIndexed { index, pkg ->
+                val entity = LauncherLayoutEntity(
+                    id = "home_app_$pkg",
+                    pageIndex = 0,
+                    cellX = index % 4,
+                    cellY = index / 4,
+                    itemType = "APP",
+                    packageName = pkg
+                )
+                layoutDao.insertItem(entity)
+            }
+        }
+    }
+
+    fun removeHomeItem(id: String) {
+        scope.launch(Dispatchers.IO) {
+            layoutDao.deleteItemById(id)
+        }
+    }
+
     fun addAppWidget(
         packageName: String,
         providerClass: String,

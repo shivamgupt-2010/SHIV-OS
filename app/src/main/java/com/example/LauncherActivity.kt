@@ -31,6 +31,7 @@ class LauncherActivity : ComponentActivity() {
 
     companion object {
         const val APPWIDGET_HOST_ID = 2048
+        var instanceAppWidgetHost: android.appwidget.AppWidgetHost? = null
     }
 
     private lateinit var appWidgetHost: android.appwidget.AppWidgetHost
@@ -38,6 +39,7 @@ class LauncherActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         appWidgetHost = android.appwidget.AppWidgetHost(this, APPWIDGET_HOST_ID)
+        instanceAppWidgetHost = appWidgetHost
         try { appWidgetHost.startListening() } catch (e: Exception) { e.printStackTrace() }
         handleAuthRedirect(intent)
         enableEdgeToEdge()
@@ -441,6 +443,7 @@ class LauncherActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        instanceAppWidgetHost = null
         try { appWidgetHost.stopListening() } catch (e: Exception) { e.printStackTrace() }
     }
 }
