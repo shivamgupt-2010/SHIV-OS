@@ -198,8 +198,11 @@ fun TaskbarWindowingLayout(
 @Composable
 fun TabbedSidebarLayout(
     apps: List<AppInfo>,
-    onAppClick: (String) -> Unit,
-    onOpenSearch: () -> Unit
+    currentTheme: LauncherThemeEntity = LauncherThemeEntity(),
+    onAppClick: (String) -> Unit = {},
+    onOpenDrawer: () -> Unit = {},
+    onOpenSearch: () -> Unit = {},
+    onOpenAiChat: () -> Unit = {}
 ) {
     var selectedShelf by remember { mutableIntStateOf(0) }
     val shelves = listOf("Favorites", "Tools", "Media", "Telemetry")
@@ -287,7 +290,11 @@ fun TabbedSidebarLayout(
 @Composable
 fun TextOnlyMinimalLayout(
     apps: List<AppInfo>,
-    onAppClick: (String) -> Unit
+    currentTheme: LauncherThemeEntity = LauncherThemeEntity(),
+    onAppClick: (String) -> Unit = {},
+    onOpenDrawer: () -> Unit = {},
+    onOpenSearch: () -> Unit = {},
+    onOpenAiChat: () -> Unit = {}
 ) {
     val timeFmt = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
     val dateFmt = remember { SimpleDateFormat("EEEE, MMMM d", Locale.getDefault()) }
@@ -327,8 +334,11 @@ fun TextOnlyMinimalLayout(
 @Composable
 fun SearchGatedLayout(
     apps: List<AppInfo>,
-    onAppClick: (String) -> Unit,
-    onOpenSearch: () -> Unit
+    currentTheme: LauncherThemeEntity = LauncherThemeEntity(),
+    onAppClick: (String) -> Unit = {},
+    onOpenDrawer: () -> Unit = {},
+    onOpenSearch: () -> Unit = {},
+    onOpenAiChat: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -378,8 +388,11 @@ fun SearchGatedLayout(
 @Composable
 fun GlassmorphicBlurLayout(
     apps: List<AppInfo>,
-    onAppClick: (String) -> Unit,
-    onOpenDrawer: () -> Unit
+    currentTheme: LauncherThemeEntity = LauncherThemeEntity(),
+    onAppClick: (String) -> Unit = {},
+    onOpenDrawer: () -> Unit = {},
+    onOpenSearch: () -> Unit = {},
+    onOpenAiChat: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -433,7 +446,11 @@ fun GlassmorphicBlurLayout(
 @Composable
 fun MagazineEditorialLayout(
     apps: List<AppInfo>,
-    onAppClick: (String) -> Unit
+    currentTheme: LauncherThemeEntity = LauncherThemeEntity(),
+    onAppClick: (String) -> Unit = {},
+    onOpenDrawer: () -> Unit = {},
+    onOpenSearch: () -> Unit = {},
+    onOpenAiChat: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -504,7 +521,11 @@ fun MagazineEditorialLayout(
 @Composable
 fun TerminalHackerLayout(
     apps: List<AppInfo>,
-    onAppClick: (String) -> Unit
+    currentTheme: LauncherThemeEntity = LauncherThemeEntity(),
+    onAppClick: (String) -> Unit = {},
+    onOpenDrawer: () -> Unit = {},
+    onOpenSearch: () -> Unit = {},
+    onOpenAiChat: () -> Unit = {}
 ) {
     val phosphorGreen = Color(0xFF00FF66)
 
@@ -550,7 +571,11 @@ fun TerminalHackerLayout(
 @Composable
 fun Holographic3DLayout(
     apps: List<AppInfo>,
-    onAppClick: (String) -> Unit
+    currentTheme: LauncherThemeEntity = LauncherThemeEntity(),
+    onAppClick: (String) -> Unit = {},
+    onOpenDrawer: () -> Unit = {},
+    onOpenSearch: () -> Unit = {},
+    onOpenAiChat: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
