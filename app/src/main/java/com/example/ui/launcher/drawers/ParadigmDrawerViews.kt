@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalFoundationApi::class)
 package com.example.ui.launcher.drawers
 
 import androidx.compose.animation.*
@@ -51,7 +52,7 @@ fun TextOnlyMinimalDrawer(
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(bottom = 32.dp, horizontal = 12.dp)
+        contentPadding = PaddingValues(start = 12.dp, top = 0.dp, end = 12.dp, bottom = 32.dp)
     ) {
         grouped.forEach { (char, charApps) ->
             item(key = "header_$char") {
