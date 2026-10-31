@@ -198,6 +198,45 @@ class LayoutManager(
         }
     }
 
+    fun addCustomWidget(
+        archetype: String,
+        configJson: String = "{}",
+        widthDp: Int = 4,
+        heightDp: Int = 2
+    ) {
+        addCustomWidget(
+            archetype = archetype,
+            cellX = 0,
+            cellY = 0,
+            spanX = widthDp,
+            spanY = heightDp,
+            configJson = configJson
+        )
+    }
+
+    fun addAppWidget(
+        packageName: String,
+        providerClass: String,
+        widthDp: Int = 4,
+        heightDp: Int = 2
+    ) {
+        scope.launch(Dispatchers.IO) {
+            if (currentTheme.value.isLayoutLocked) return@launch
+            val entity = LauncherLayoutEntity(
+                id = "appwidget_${UUID.randomUUID()}",
+                pageIndex = 0,
+                cellX = 0,
+                cellY = 0,
+                spanX = widthDp,
+                spanY = heightDp,
+                itemType = "APP_WIDGET",
+                packageName = packageName,
+                activityName = providerClass
+            )
+            layoutDao.insertItem(entity)
+        }
+    }
+
     fun addAppWidget(
         appWidgetId: Int,
         cellX: Int,

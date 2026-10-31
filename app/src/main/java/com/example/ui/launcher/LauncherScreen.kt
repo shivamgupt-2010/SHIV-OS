@@ -654,14 +654,14 @@ fun ShivOSLiteLauncherScreen(
                 }
 
                 // Dynamic Placed Custom Widgets & Installed AppWidgets
-                val placedWidgets = layoutItems.filter { it.itemType == "WIDGET" || it.itemType == "APP_WIDGET" }
+                val placedWidgets = layoutItems.filter { it.itemType == "WIDGET" || it.itemType == "CUSTOM_WIDGET" || it.itemType == "APP_WIDGET" }
                 if (placedWidgets.isNotEmpty()) {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         placedWidgets.forEach { item ->
-                            if (item.itemType == "WIDGET") {
+                            if (item.itemType == "WIDGET" || item.itemType == "CUSTOM_WIDGET") {
                                 RenderCustomWidget(
                                     archetype = item.widgetArchetype ?: "CLOCK",
                                     configJson = item.widgetConfigJson ?: "",
@@ -675,7 +675,7 @@ fun ShivOSLiteLauncherScreen(
                             } else if (item.itemType == "APP_WIDGET") {
                                 RenderAppWidgetCard(
                                     packageName = item.packageName,
-                                    providerClass = item.activityClassName ?: "",
+                                    providerClass = item.activityName,
                                     modifier = Modifier.fillMaxWidth(),
                                     onClick = { viewModel.onAppClicked(item.packageName) }
                                 )
