@@ -33,5 +33,6 @@ data class LauncherThemeEntity(
     val isReducedMotion: Boolean = false,
     val wallpaperPreset: String = "DEEP_COSMOS",
     val activeIconPack: String = "PACK_NEBULA",
+    val layoutParadigm: String = "GRID", // "GRID", "TASKBAR_WINDOWING", "TABBED_SIDEBAR", "TEXT_ONLY_MINIMAL", "SEARCH_GATED", "GLASSMORPHIC_BLUR", "MAGAZINE_EDITORIAL", "TERMINAL_HACKER", "HOLOGRAPHIC_3D"
     val updatedAt: Long = System.currentTimeMillis()
 )

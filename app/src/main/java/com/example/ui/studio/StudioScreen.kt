@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.core.launcher.ComplexityMode
 import com.example.core.launcher.LayoutManager
+import com.example.core.launcher.LayoutParadigm
 import com.example.core.launcher.ProfileType
 import com.example.core.studio.StudioThemeEngine
 import com.example.core.studio.StudioThemeTokens
@@ -38,6 +39,8 @@ import com.example.core.studio.ThemePreset
 import com.example.ui.components.CosmicBackground
 import com.example.ui.components.TrishulIcon
 import com.example.ui.theme.*
+import com.example.ui.widgets.AppWidgetPickerDialog
+import com.example.ui.widgets.CustomWidgetStudioDialog
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -97,6 +100,9 @@ fun StudioScreen(
 
     var renameTargetId by remember { mutableStateOf<String?>(null) }
     var renameInputText by remember { mutableStateOf("") }
+
+    var showStudioWidgetPicker by remember { mutableStateOf(false) }
+    var showStudioCustomWidgetStudio by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         CosmicBackground(showSilhouette = false)
@@ -689,6 +695,45 @@ fun StudioScreen(
 
                 // TAB 1: LAYOUT & COMPLEXITY
                 if (selectedTab == 1) {
+                    Text("Home Screen Paradigm", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = ShivTheme.colors.textPrimary)
+                    Text("Select from 8 signature architectural paradigms with custom transitions", style = MaterialTheme.typography.bodySmall, color = ShivTheme.colors.textSecondary)
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        LayoutParadigm.entries.forEach { paradigm ->
+                            val isSelected = theme.layoutParadigm == paradigm.key
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(theme.cardCornerRadiusDp.dp))
+                                    .clickable {
+                                        themeEngine.setLayoutParadigm(paradigm.key)
+                                        Toast.makeText(context, "Applied ${paradigm.title} Layout", Toast.LENGTH_SHORT).show()
+                                    },
+                                color = if (isSelected) ShivTheme.colors.surfaceVariant else ShivTheme.colors.surface.copy(alpha = 0.5f),
+                                shape = RoundedCornerShape(theme.cardCornerRadiusDp.dp),
+                                border = BorderStroke(1.dp, if (isSelected) ShivTheme.colors.primary else ShivTheme.colors.cardBorder.copy(alpha = 0.3f))
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(14.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(paradigm.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = if (isSelected) ShivTheme.colors.primary else ShivTheme.colors.textPrimary)
+                                        Text(paradigm.description, style = MaterialTheme.typography.bodySmall, color = ShivTheme.colors.textSecondary)
+                                    }
+                                    if (isSelected) {
+                                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = ShivTheme.colors.primary)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
                     Text("Complexity Mode", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = ShivTheme.colors.textPrimary)
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         ComplexityMode.entries.forEach { mode ->
@@ -1009,7 +1054,55 @@ fun StudioScreen(
                 if (selectedTab == 3) {
                     Text("Home Screen Widgets & Indicators", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = ShivTheme.colors.textPrimary)
                     
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Widget Creation & System Picker Actions
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(16.dp))
+                                .clickable { showStudioCustomWidgetStudio = true },
+                            color = ShivTheme.colors.primary.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(16.dp),
+                            border = BorderStroke(1.5.dp, ShivTheme.colors.primary.copy(alpha = 0.5f))
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(14.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Icon(Icons.Default.Widgets, contentDescription = null, tint = ShivTheme.colors.primary, modifier = Modifier.size(26.dp))
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text("Custom Widget Studio", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = ShivTheme.colors.textPrimary)
+                                Text("6 Archetypes & Skins", style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp), color = ShivTheme.colors.textSecondary)
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(16.dp))
+                                .clickable { showStudioWidgetPicker = true },
+                            color = ShivTheme.colors.surfaceVariant.copy(alpha = 0.7f),
+                            shape = RoundedCornerShape(16.dp),
+                            border = BorderStroke(1.dp, ShivTheme.colors.cardBorder.copy(alpha = 0.4f))
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(14.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Icon(Icons.Default.AddCircleOutline, contentDescription = null, tint = ShivTheme.colors.accent, modifier = Modifier.size(26.dp))
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text("Installed AppWidgets", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = ShivTheme.colors.textPrimary)
+                                Text("Spotify, Weather, etc.", style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp), color = ShivTheme.colors.textSecondary)
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -1568,6 +1661,36 @@ fun StudioScreen(
                     TextButton(onClick = { showImportDialog = false }) {
                         Text("Cancel")
                     }
+                }
+            )
+        }
+
+        // Custom Widget Studio Dialog
+        if (showStudioCustomWidgetStudio) {
+            CustomWidgetStudioDialog(
+                onDismissRequest = { showStudioCustomWidgetStudio = false },
+                onSaveAndPlace = { archetype, surfaceStyle, radiusDp ->
+                    val configJson = """{"style":"$surfaceStyle","radius":$radiusDp}"""
+                    layoutManager?.addCustomWidget(archetype, configJson, widthDp = 4, heightDp = 2)
+                    showStudioCustomWidgetStudio = false
+                    Toast.makeText(context, "$archetype widget added to Home Screen!", Toast.LENGTH_SHORT).show()
+                }
+            )
+        }
+
+        // System AppWidget Picker Dialog
+        if (showStudioWidgetPicker) {
+            AppWidgetPickerDialog(
+                onDismissRequest = { showStudioWidgetPicker = false },
+                onWidgetSelected = { provider ->
+                    layoutManager?.addAppWidget(
+                        packageName = provider.provider.packageName,
+                        providerClass = provider.provider.className,
+                        widthDp = provider.minWidth,
+                        heightDp = provider.minHeight
+                    )
+                    showStudioWidgetPicker = false
+                    Toast.makeText(context, "${provider.loadLabel(context.packageManager)} added to Home Screen!", Toast.LENGTH_SHORT).show()
                 }
             )
         }

@@ -158,6 +158,85 @@ class LayoutManager(
         }
     }
 
+    fun updateItemPlacement(id: String, cellX: Int, cellY: Int, spanX: Int = 1, spanY: Int = 1) {
+        scope.launch(Dispatchers.IO) {
+            if (currentTheme.value.isLayoutLocked) return@launch
+            val item = layoutDao.getItemById(id) ?: return@launch
+            val updated = item.copy(
+                cellX = cellX,
+                cellY = cellY,
+                spanX = spanX,
+                spanY = spanY,
+                updatedAt = System.currentTimeMillis()
+            )
+            layoutDao.updateItem(updated)
+        }
+    }
+
+    fun addCustomWidget(
+        archetype: String,
+        cellX: Int,
+        cellY: Int,
+        spanX: Int = 2,
+        spanY: Int = 2,
+        configJson: String = "{}"
+    ) {
+        scope.launch(Dispatchers.IO) {
+            if (currentTheme.value.isLayoutLocked) return@launch
+            val entity = LauncherLayoutEntity(
+                id = "custom_widget_${UUID.randomUUID()}",
+                pageIndex = 0,
+                cellX = cellX,
+                cellY = cellY,
+                spanX = spanX,
+                spanY = spanY,
+                itemType = "CUSTOM_WIDGET",
+                widgetArchetype = archetype,
+                widgetConfigJson = configJson
+            )
+            layoutDao.insertItem(entity)
+        }
+    }
+
+    fun addAppWidget(
+        appWidgetId: Int,
+        cellX: Int,
+        cellY: Int,
+        spanX: Int = 2,
+        spanY: Int = 2
+    ) {
+        scope.launch(Dispatchers.IO) {
+            if (currentTheme.value.isLayoutLocked) return@launch
+            val entity = LauncherLayoutEntity(
+                id = "appwidget_${UUID.randomUUID()}",
+                pageIndex = 0,
+                cellX = cellX,
+                cellY = cellY,
+                spanX = spanX,
+                spanY = spanY,
+                itemType = "WIDGET",
+                appWidgetId = appWidgetId
+            )
+            layoutDao.insertItem(entity)
+        }
+    }
+
+    fun updateFloatingWindowState(id: String, x: Float, y: Float, widthDp: Int, heightDp: Int, isMinimized: Boolean) {
+        scope.launch(Dispatchers.IO) {
+            val item = layoutDao.getItemById(id) ?: return@launch
+            val updated = item.copy(
+                isFloatingWindow = true,
+                windowX = x,
+                windowY = y,
+                windowWidthDp = widthDp,
+                windowHeightDp = heightDp,
+                isMinimized = isMinimized,
+                updatedAt = System.currentTimeMillis()
+            )
+            layoutDao.updateItem(updated)
+        }
+    }
+
     fun toggleLayoutLock(locked: Boolean) {
         scope.launch(Dispatchers.IO) {
             themeDao.setLayoutLocked(locked)

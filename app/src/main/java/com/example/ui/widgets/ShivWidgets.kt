@@ -8,6 +8,7 @@ import android.content.Context
 import androidx.compose.animation.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -23,10 +24,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.graphics.drawable.toBitmap
 import com.example.core.wellbeing.WellbeingManager
 import com.example.ui.components.TrishulIcon
 import com.example.ui.theme.ShivTheme
@@ -300,3 +304,452 @@ fun HostedAppWidgetView(
         modifier = modifier
     )
 }
+
+
+/**
+ * 6 Custom Widget Archetypes for the Custom Widget Creation Studio
+ */
+
+@Composable
+fun CustomClockWidget(
+    modifier: Modifier = Modifier,
+    surfaceStyle: String = "GLASS",
+    primaryColor: Color = ShivTheme.colors.primary,
+    accentColor: Color = ShivTheme.colors.accent,
+    cornerRadiusDp: Int = 18
+) {
+    var timeStr by remember { mutableStateOf("") }
+    var dateStr by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        val timeFmt = SimpleDateFormat("HH:mm", Locale.getDefault())
+        val dateFmt = SimpleDateFormat("EEE, MMM d", Locale.getDefault())
+        while (true) {
+            val now = Date()
+            timeStr = timeFmt.format(now)
+            dateStr = dateFmt.format(now)
+            kotlinx.coroutines.delay(1000L)
+        }
+    }
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(cornerRadiusDp.dp)),
+        shape = RoundedCornerShape(cornerRadiusDp.dp),
+        color = when (surfaceStyle) {
+            "MATTE" -> Color(0xFF141416)
+            "HOLOGRAM" -> Color(0x33090D1F)
+            "TERMINAL" -> Color(0xFF0A0C0A)
+            else -> ShivTheme.colors.surfaceVariant.copy(alpha = 0.75f)
+        },
+        border = BorderStroke(
+            if (surfaceStyle == "HOLOGRAM") 2.dp else 1.dp,
+            when (surfaceStyle) {
+                "TERMINAL" -> Color(0xFF00FF66)
+                "HOLOGRAM" -> primaryColor
+                else -> primaryColor.copy(alpha = 0.4f)
+            }
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = timeStr,
+                style = MaterialTheme.typography.displayMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                ),
+                color = if (surfaceStyle == "TERMINAL") Color(0xFF00FF66) else primaryColor
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = dateStr,
+                style = MaterialTheme.typography.labelMedium,
+                color = if (surfaceStyle == "TERMINAL") Color(0xFF00CC55) else ShivTheme.colors.textSecondary
+            )
+        }
+    }
+}
+
+@Composable
+fun CustomTelemetryWidget(
+    modifier: Modifier = Modifier,
+    surfaceStyle: String = "GLASS",
+    primaryColor: Color = ShivTheme.colors.primary,
+    accentColor: Color = ShivTheme.colors.accent,
+    cornerRadiusDp: Int = 18
+) {
+    val context = LocalContext.current
+    val batteryManager = remember { context.getSystemService(Context.BATTERY_SERVICE) as? android.os.BatteryManager }
+    val batteryLevel = remember { batteryManager?.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY) ?: 82 }
+
+    val actManager = remember { context.getSystemService(Context.ACTIVITY_SERVICE) as? android.app.ActivityManager }
+    val memInfo = remember {
+        val info = android.app.ActivityManager.MemoryInfo()
+        actManager?.getMemoryInfo(info)
+        val usedMb = ((info.totalMem - info.availMem) / (1024 * 1024)).toInt()
+        val totalMb = (info.totalMem / (1024 * 1024)).toInt()
+        val percent = if (totalMb > 0) ((usedMb.toFloat() / totalMb) * 100).toInt() else 65
+        Pair(percent, "$usedMb / $totalMb MB")
+    }
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(cornerRadiusDp.dp)),
+        shape = RoundedCornerShape(cornerRadiusDp.dp),
+        color = when (surfaceStyle) {
+            "MATTE" -> Color(0xFF141416)
+            "HOLOGRAM" -> Color(0x33090D1F)
+            "TERMINAL" -> Color(0xFF0A0C0A)
+            else -> ShivTheme.colors.surfaceVariant.copy(alpha = 0.75f)
+        },
+        border = BorderStroke(
+            if (surfaceStyle == "HOLOGRAM") 2.dp else 1.dp,
+            if (surfaceStyle == "TERMINAL") Color(0xFFFFB547) else accentColor.copy(alpha = 0.4f)
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "HARDWARE TELEMETRY",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+                    color = if (surfaceStyle == "TERMINAL") Color(0xFFFFB547) else ShivTheme.colors.textSecondary
+                )
+                Text(
+                    "ONLINE",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = if (surfaceStyle == "TERMINAL") Color(0xFF00FF66) else primaryColor
+                )
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("RAM Usage: ${memInfo.first}%", style = MaterialTheme.typography.bodySmall, color = ShivTheme.colors.textPrimary)
+                Text(memInfo.second, style = MaterialTheme.typography.labelSmall, color = ShivTheme.colors.textSecondary)
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            LinearProgressIndicator(
+                progress = { memInfo.first / 100f },
+                modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+                color = primaryColor,
+                trackColor = ShivTheme.colors.cardBorder.copy(alpha = 0.3f)
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Battery Capacity", style = MaterialTheme.typography.bodySmall, color = ShivTheme.colors.textPrimary)
+                Text("$batteryLevel%", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = accentColor)
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            LinearProgressIndicator(
+                progress = { batteryLevel / 100f },
+                modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+                color = accentColor,
+                trackColor = ShivTheme.colors.cardBorder.copy(alpha = 0.3f)
+            )
+        }
+    }
+}
+
+@Composable
+fun CustomWeatherWidget(
+    modifier: Modifier = Modifier,
+    surfaceStyle: String = "GLASS",
+    primaryColor: Color = ShivTheme.colors.primary,
+    accentColor: Color = ShivTheme.colors.accent,
+    cornerRadiusDp: Int = 18
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(cornerRadiusDp.dp)),
+        shape = RoundedCornerShape(cornerRadiusDp.dp),
+        color = when (surfaceStyle) {
+            "MATTE" -> Color(0xFF141416)
+            "HOLOGRAM" -> Color(0x33090D1F)
+            "TERMINAL" -> Color(0xFF0A0C0A)
+            else -> ShivTheme.colors.surfaceVariant.copy(alpha = 0.75f)
+        },
+        border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.4f))
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text("WEATHER & HORIZON", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = ShivTheme.colors.textSecondary)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text("24°C", style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold), color = primaryColor)
+                Text("Partly Sunny • H: 27° L: 19°", style = MaterialTheme.typography.bodySmall, color = ShivTheme.colors.textPrimary)
+            }
+            Box(
+                modifier = Modifier
+                    .size(52.dp)
+                    .clip(CircleShape)
+                    .background(accentColor.copy(alpha = 0.2f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.WbSunny, contentDescription = null, tint = accentColor, modifier = Modifier.size(28.dp))
+            }
+        }
+    }
+}
+
+@Composable
+fun CustomAgendaWidget(
+    modifier: Modifier = Modifier,
+    surfaceStyle: String = "GLASS",
+    primaryColor: Color = ShivTheme.colors.primary,
+    accentColor: Color = ShivTheme.colors.accent,
+    cornerRadiusDp: Int = 18
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(cornerRadiusDp.dp)),
+        shape = RoundedCornerShape(cornerRadiusDp.dp),
+        color = when (surfaceStyle) {
+            "MATTE" -> Color(0xFF141416)
+            "HOLOGRAM" -> Color(0x33090D1F)
+            "TERMINAL" -> Color(0xFF0A0C0A)
+            else -> ShivTheme.colors.surfaceVariant.copy(alpha = 0.75f)
+        },
+        border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.4f))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.CalendarToday, contentDescription = null, tint = primaryColor, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("UPCOMING AGENDA", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = ShivTheme.colors.textSecondary)
+                }
+                Text("Today", style = MaterialTheme.typography.labelSmall, color = primaryColor)
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("Design Review & System Architecture", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = ShivTheme.colors.textPrimary)
+            Text("14:30 - 15:30 • Google Meet", style = MaterialTheme.typography.labelSmall, color = ShivTheme.colors.textSecondary)
+        }
+    }
+}
+
+@Composable
+fun CustomMediaWidget(
+    modifier: Modifier = Modifier,
+    surfaceStyle: String = "GLASS",
+    primaryColor: Color = ShivTheme.colors.primary,
+    accentColor: Color = ShivTheme.colors.accent,
+    cornerRadiusDp: Int = 18
+) {
+    var isPlaying by remember { mutableStateOf(false) }
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(cornerRadiusDp.dp)),
+        shape = RoundedCornerShape(cornerRadiusDp.dp),
+        color = when (surfaceStyle) {
+            "MATTE" -> Color(0xFF141416)
+            "HOLOGRAM" -> Color(0x33090D1F)
+            "TERMINAL" -> Color(0xFF0A0C0A)
+            else -> ShivTheme.colors.surfaceVariant.copy(alpha = 0.75f)
+        },
+        border = BorderStroke(1.dp, accentColor.copy(alpha = 0.4f))
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(accentColor.copy(alpha = 0.2f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.MusicNote, contentDescription = null, tint = accentColor, modifier = Modifier.size(24.dp))
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Now Playing", style = MaterialTheme.typography.labelSmall, color = ShivTheme.colors.textSecondary)
+                Text("Cosmic Resonance", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = ShivTheme.colors.textPrimary)
+                Text("SHIV Soundscapes • 3:42", style = MaterialTheme.typography.labelSmall, color = primaryColor)
+            }
+            IconButton(onClick = { isPlaying = !isPlaying }) {
+                Icon(
+                    if (isPlaying) Icons.Default.PauseCircle else Icons.Default.PlayCircle,
+                    contentDescription = "Play/Pause",
+                    tint = primaryColor,
+                    modifier = Modifier.size(36.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun CustomShivAiWidget(
+    modifier: Modifier = Modifier,
+    surfaceStyle: String = "GLASS",
+    primaryColor: Color = ShivTheme.colors.primary,
+    accentColor: Color = ShivTheme.colors.accent,
+    cornerRadiusDp: Int = 18,
+    onTap: () -> Unit = {}
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(cornerRadiusDp.dp))
+            .clickable(onClick = onTap),
+        shape = RoundedCornerShape(cornerRadiusDp.dp),
+        color = when (surfaceStyle) {
+            "MATTE" -> Color(0xFF141416)
+            "HOLOGRAM" -> Color(0x33090D1F)
+            "TERMINAL" -> Color(0xFF0A0C0A)
+            else -> ShivTheme.colors.surfaceVariant.copy(alpha = 0.75f)
+        },
+        border = BorderStroke(
+            if (surfaceStyle == "HOLOGRAM") 2.dp else 1.2.dp,
+            Brush.linearGradient(listOf(primaryColor, accentColor))
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TrishulIcon(size = 24.dp)
+            Spacer(modifier = Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    "SHIV AI Cognitive Assistant",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    color = ShivTheme.colors.textPrimary
+                )
+                Text(
+                    "Tap to ask, automate actions or research",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = ShivTheme.colors.textSecondary
+                )
+            }
+            Icon(Icons.Default.ArrowForward, contentDescription = null, tint = primaryColor, modifier = Modifier.size(20.dp))
+        }
+    }
+}
+
+/**
+ * Universal dispatcher for in-launcher custom widgets
+ */
+@Composable
+fun RenderCustomWidget(
+    archetype: String,
+    configJson: String = "",
+    modifier: Modifier = Modifier,
+    onTap: (() -> Unit)? = null
+) {
+    val style = remember(configJson) {
+        when {
+            configJson.contains("MATTE") -> "MATTE"
+            configJson.contains("HOLOGRAM") -> "HOLOGRAM"
+            configJson.contains("TERMINAL") -> "TERMINAL"
+            else -> "GLASS"
+        }
+    }
+
+    when (archetype.uppercase()) {
+        "CLOCK" -> CustomClockWidget(modifier = modifier, surfaceStyle = style)
+        "TELEMETRY" -> CustomTelemetryWidget(modifier = modifier, surfaceStyle = style)
+        "WEATHER" -> CustomWeatherWidget(modifier = modifier, surfaceStyle = style)
+        "AGENDA" -> CustomAgendaWidget(modifier = modifier, surfaceStyle = style)
+        "MEDIA" -> CustomMediaWidget(modifier = modifier, surfaceStyle = style)
+        "SHIV_AI" -> CustomShivAiWidget(modifier = modifier, surfaceStyle = style, onTap = onTap)
+        else -> CustomClockWidget(modifier = modifier, surfaceStyle = style)
+    }
+}
+
+/**
+ * Embedded representation for installed system AppWidgets
+ */
+@Composable
+fun RenderAppWidgetCard(
+    packageName: String,
+    providerClass: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    val context = LocalContext.current
+    val pm = context.packageManager
+    val appName = remember(packageName) {
+        try {
+            val ai = pm.getApplicationInfo(packageName, 0)
+            pm.getApplicationLabel(ai).toString()
+        } catch (e: Exception) {
+            packageName.substringAfterLast('.')
+        }
+    }
+    val appIcon = remember(packageName) {
+        try {
+            pm.getApplicationIcon(packageName)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .clickable(onClick = onClick),
+        color = ShivTheme.colors.surfaceVariant.copy(alpha = 0.8f),
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(1.dp, ShivTheme.colors.primary.copy(alpha = 0.4f))
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (appIcon != null) {
+                Image(
+                    bitmap = appIcon.toBitmap().asImageBitmap(),
+                    contentDescription = appName,
+                    modifier = Modifier.size(42.dp).clip(RoundedCornerShape(10.dp))
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(ShivTheme.colors.primary.copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Widgets, contentDescription = null, tint = ShivTheme.colors.primary)
+                }
+            }
+            Spacer(modifier = Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = appName,
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    color = ShivTheme.colors.textPrimary
+                )
+                Text(
+                    text = "Installed AppWidget • Tap to launch",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = ShivTheme.colors.textSecondary
+                )
+            }
+            Icon(Icons.Default.OpenInNew, contentDescription = null, tint = ShivTheme.colors.primary, modifier = Modifier.size(18.dp))
+        }
+    }
+}
+

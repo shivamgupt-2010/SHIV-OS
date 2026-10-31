@@ -879,6 +879,13 @@ class StudioThemeEngine(
         }
     }
 
+    fun setLayoutParadigm(paradigmKey: String) {
+        scope.launch(Dispatchers.IO) {
+            val current = currentTheme.value
+            themeDao.saveTheme(current.copy(layoutParadigm = paradigmKey, updatedAt = System.currentTimeMillis()))
+        }
+    }
+
     // Export theme configuration as validated JSON string
     fun exportThemeJson(): String {
         val t = currentTheme.value
@@ -908,6 +915,7 @@ class StudioThemeEngine(
         json.put("dockCount", t.dockCount)
         json.put("isReducedMotion", t.isReducedMotion)
         json.put("activeIconPack", t.activeIconPack)
+        json.put("layoutParadigm", t.layoutParadigm)
         return json.toString(2)
     }
 
@@ -926,6 +934,7 @@ class StudioThemeEngine(
             val typography = json.optString("typographyStyle", "DEFAULT")
             val animation = json.optString("animationPreset", "SMOOTH")
             val activeIconPack = json.optString("activeIconPack", "PACK_NEBULA")
+            val layoutParadigm = json.optString("layoutParadigm", "GRID")
 
             // Validate hex codes
             fun validateHex(hex: String, fallback: String): String {
@@ -961,6 +970,7 @@ class StudioThemeEngine(
                     gridColumns = cols,
                     dockCount = dock,
                     activeIconPack = activeIconPack,
+                    layoutParadigm = layoutParadigm,
                     isReducedMotion = json.optBoolean("isReducedMotion", false),
                     updatedAt = System.currentTimeMillis()
                 )

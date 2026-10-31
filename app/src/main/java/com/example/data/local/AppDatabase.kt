@@ -20,9 +20,10 @@ import com.example.data.local.entity.*
         WellbeingBudgetEntity::class,
         FamilyPolicyEntity::class,
         SyncQueueEntity::class,
-        NoteEntity::class
+        NoteEntity::class,
+        CustomWidgetEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -39,4 +40,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun familyPolicyDao(): FamilyPolicyDao
     abstract fun syncQueueDao(): SyncQueueDao
     abstract fun noteDao(): NoteDao
+    abstract fun customWidgetDao(): CustomWidgetDao
 }

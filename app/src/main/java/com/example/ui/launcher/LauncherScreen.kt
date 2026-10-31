@@ -48,10 +48,18 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.core.launcher.AppInfo
 import com.example.core.launcher.ComplexityMode
 import com.example.core.launcher.ProfileType
+import com.example.core.launcher.LayoutParadigm
 import com.example.data.local.entity.LauncherLayoutEntity
 import com.example.ui.components.CosmicBackground
 import com.example.ui.components.TrishulIcon
+import com.example.ui.effects.DaylightEngine
+import com.example.ui.effects.holographicTilt
+import com.example.ui.launcher.paradigms.*
 import com.example.ui.theme.*
+import com.example.ui.widgets.AppWidgetPickerDialog
+import com.example.ui.widgets.CustomWidgetStudioDialog
+import com.example.ui.widgets.RenderAppWidgetCard
+import com.example.ui.widgets.RenderCustomWidget
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -92,6 +100,8 @@ fun ShivOSLiteLauncherScreen(
     var showHomeEditModal by remember { mutableStateOf(false) }
     var selectedAppForOptions by remember { mutableStateOf<AppInfo?>(null) }
     var showResetConfirmDialog by remember { mutableStateOf(false) }
+    var showHomeAppWidgetPicker by remember { mutableStateOf(false) }
+    var showHomeCustomWidgetStudio by remember { mutableStateOf(false) }
 
     // Live time & date
     var currentTime by remember { mutableStateOf("") }
@@ -173,7 +183,81 @@ fun ShivOSLiteLauncherScreen(
         val currentWallpaper by viewModel.currentWallpaper.collectAsState()
         com.example.core.studio.LauncherWallpaperView(config = currentWallpaper)
 
-        Scaffold(
+        // Dynamic Ambient Solar Daylight Atmosphere (Dawn, Noon, Sunset, Midnight)
+        DaylightEngine.DaylightAtmosphereOverlay()
+
+        val activeParadigm = LayoutParadigm.fromKey(currentTheme.layoutParadigm)
+
+        if (activeParadigm != LayoutParadigm.GRID) {
+            when (activeParadigm) {
+                LayoutParadigm.TASKBAR_WINDOWING -> TaskbarWindowingLayout(
+                    apps = installedApps,
+                    currentTheme = currentTheme,
+                    onAppClick = { viewModel.onAppClicked(it) },
+                    onOpenDrawer = { onNavigate("all_apps") },
+                    onOpenSearch = { onNavigate("all_apps") },
+                    onOpenAiChat = { onNavigate("chat") }
+                )
+                LayoutParadigm.TABBED_SIDEBAR -> TabbedSidebarLayout(
+                    apps = installedApps,
+                    currentTheme = currentTheme,
+                    onAppClick = { viewModel.onAppClicked(it) },
+                    onOpenDrawer = { onNavigate("all_apps") },
+                    onOpenSearch = { onNavigate("all_apps") },
+                    onOpenAiChat = { onNavigate("chat") }
+                )
+                LayoutParadigm.TEXT_ONLY_MINIMAL -> TextOnlyMinimalLayout(
+                    apps = installedApps,
+                    currentTheme = currentTheme,
+                    onAppClick = { viewModel.onAppClicked(it) },
+                    onOpenDrawer = { onNavigate("all_apps") },
+                    onOpenSearch = { onNavigate("all_apps") },
+                    onOpenAiChat = { onNavigate("chat") }
+                )
+                LayoutParadigm.SEARCH_GATED -> SearchGatedLayout(
+                    apps = installedApps,
+                    currentTheme = currentTheme,
+                    onAppClick = { viewModel.onAppClicked(it) },
+                    onOpenDrawer = { onNavigate("all_apps") },
+                    onOpenSearch = { onNavigate("all_apps") },
+                    onOpenAiChat = { onNavigate("chat") }
+                )
+                LayoutParadigm.GLASSMORPHIC_BLUR -> GlassmorphicBlurLayout(
+                    apps = installedApps,
+                    currentTheme = currentTheme,
+                    onAppClick = { viewModel.onAppClicked(it) },
+                    onOpenDrawer = { onNavigate("all_apps") },
+                    onOpenSearch = { onNavigate("all_apps") },
+                    onOpenAiChat = { onNavigate("chat") }
+                )
+                LayoutParadigm.MAGAZINE_EDITORIAL -> MagazineEditorialLayout(
+                    apps = installedApps,
+                    currentTheme = currentTheme,
+                    onAppClick = { viewModel.onAppClicked(it) },
+                    onOpenDrawer = { onNavigate("all_apps") },
+                    onOpenSearch = { onNavigate("all_apps") },
+                    onOpenAiChat = { onNavigate("chat") }
+                )
+                LayoutParadigm.TERMINAL_HACKER -> TerminalHackerLayout(
+                    apps = installedApps,
+                    currentTheme = currentTheme,
+                    onAppClick = { viewModel.onAppClicked(it) },
+                    onOpenDrawer = { onNavigate("all_apps") },
+                    onOpenSearch = { onNavigate("all_apps") },
+                    onOpenAiChat = { onNavigate("chat") }
+                )
+                LayoutParadigm.HOLOGRAPHIC_3D -> Holographic3DLayout(
+                    apps = installedApps,
+                    currentTheme = currentTheme,
+                    onAppClick = { viewModel.onAppClicked(it) },
+                    onOpenDrawer = { onNavigate("all_apps") },
+                    onOpenSearch = { onNavigate("all_apps") },
+                    onOpenAiChat = { onNavigate("chat") }
+                )
+                else -> {}
+            }
+        } else {
+            Scaffold(
             containerColor = Color.Transparent,
             topBar = {
                 Row(
@@ -569,6 +653,38 @@ fun ShivOSLiteLauncherScreen(
                     Spacer(modifier = Modifier.height(14.dp))
                 }
 
+                // Dynamic Placed Custom Widgets & Installed AppWidgets
+                val placedWidgets = layoutItems.filter { it.itemType == "WIDGET" || it.itemType == "APP_WIDGET" }
+                if (placedWidgets.isNotEmpty()) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        placedWidgets.forEach { item ->
+                            if (item.itemType == "WIDGET") {
+                                RenderCustomWidget(
+                                    archetype = item.widgetArchetype ?: "CLOCK",
+                                    configJson = item.widgetConfigJson ?: "",
+                                    modifier = Modifier.fillMaxWidth(),
+                                    onTap = {
+                                        if (item.widgetArchetype == "SHIV_AI") {
+                                            onNavigate("chat")
+                                        }
+                                    }
+                                )
+                            } else if (item.itemType == "APP_WIDGET") {
+                                RenderAppWidgetCard(
+                                    packageName = item.packageName,
+                                    providerClass = item.activityClassName ?: "",
+                                    modifier = Modifier.fillMaxWidth(),
+                                    onClick = { viewModel.onAppClicked(item.packageName) }
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(14.dp))
+                }
+
                 // Adaptive AI Suggestions (Signals from UsageStatsManager + Context)
                 if (predictedApps.isNotEmpty()) {
                     Row(
@@ -751,6 +867,7 @@ fun ShivOSLiteLauncherScreen(
                 Spacer(modifier = Modifier.height(20.dp))
             }
         }
+        }
 
         // 1. Home Screen Edit Modal (Long-Press Empty Space)
         if (showHomeEditModal) {
@@ -866,6 +983,58 @@ fun ShivOSLiteLauncherScreen(
                                 Icon(Icons.Default.GridOn, contentDescription = null, tint = ShivaAmber, modifier = Modifier.size(24.dp))
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text("Grid ${currentTheme.gridColumns}x${currentTheme.gridRows}", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = ShivTheme.colors.textPrimary)
+                            }
+                        }
+                    }
+
+                    // Add Widgets Quick Row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(14.dp))
+                                .clickable {
+                                    showHomeEditModal = false
+                                    showHomeCustomWidgetStudio = true
+                                },
+                            color = ShivTheme.colors.primary.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(14.dp),
+                            border = BorderStroke(1.dp, ShivTheme.colors.primary.copy(alpha = 0.4f))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(Icons.Default.Widgets, contentDescription = null, tint = ShivTheme.colors.primary, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Custom Widget", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = ShivTheme.colors.primary)
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(14.dp))
+                                .clickable {
+                                    showHomeEditModal = false
+                                    showHomeAppWidgetPicker = true
+                                },
+                            color = ShivTheme.colors.surfaceVariant.copy(alpha = 0.8f),
+                            shape = RoundedCornerShape(14.dp),
+                            border = BorderStroke(1.dp, ShivTheme.colors.cardBorder.copy(alpha = 0.4f))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(Icons.Default.AddCircleOutline, contentDescription = null, tint = ShivTheme.colors.accent, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("AppWidget", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = ShivTheme.colors.textPrimary)
                             }
                         }
                     }
@@ -1049,6 +1218,36 @@ fun ShivOSLiteLauncherScreen(
                     TextButton(onClick = { showResetConfirmDialog = false }) {
                         Text("Cancel")
                     }
+                }
+            )
+        }
+
+        // 4. Custom Widget Studio Dialog
+        if (showHomeCustomWidgetStudio) {
+            CustomWidgetStudioDialog(
+                onDismissRequest = { showHomeCustomWidgetStudio = false },
+                onSaveAndPlace = { archetype, surfaceStyle, radiusDp ->
+                    val configJson = """{"style":"$surfaceStyle","radius":$radiusDp}"""
+                    viewModel.layoutManager?.addCustomWidget(archetype, configJson, widthDp = 4, heightDp = 2)
+                    showHomeCustomWidgetStudio = false
+                    Toast.makeText(context, "$archetype widget placed on Home Screen!", Toast.LENGTH_SHORT).show()
+                }
+            )
+        }
+
+        // 5. AppWidget Picker Dialog
+        if (showHomeAppWidgetPicker) {
+            AppWidgetPickerDialog(
+                onDismissRequest = { showHomeAppWidgetPicker = false },
+                onWidgetSelected = { provider ->
+                    viewModel.layoutManager?.addAppWidget(
+                        packageName = provider.provider.packageName,
+                        providerClass = provider.provider.className,
+                        widthDp = provider.minWidth,
+                        heightDp = provider.minHeight
+                    )
+                    showHomeAppWidgetPicker = false
+                    Toast.makeText(context, "${provider.loadLabel(context.packageManager)} added to Home Screen!", Toast.LENGTH_SHORT).show()
                 }
             )
         }

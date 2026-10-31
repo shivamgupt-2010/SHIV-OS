@@ -17,12 +17,12 @@ enum class MotionPreset(
     SMOOTH(
         title = "Smooth",
         description = "Balanced, fluid Android 14 physics and easing",
-        durationMs = 260
+        durationMs = 280
     ),
     EXPRESSIVE(
         title = "Expressive",
         description = "Cosmic dynamic spring with playful bounce and depth",
-        durationMs = 380
+        durationMs = 420
     );
 
     companion object {
@@ -30,6 +30,20 @@ enum class MotionPreset(
             return entries.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: SMOOTH
         }
     }
+}
+
+/**
+ * Purpose-Driven Animation Timing Hierarchy:
+ * - MICRO (140ms): Quick buttons, haptic toggles, typing filters
+ * - SPATIAL (300ms): App open/close scale reveals, grid snaps, page swipes
+ * - MORPH (420ms): Fullscreen search expansion, drawer sheet rise, widget resize
+ * - IMMERSIVE (650ms): Paradigm shifts, 3D holographic tilt entries, terminal boot cascade
+ */
+enum class AnimationTier(val durationMs: Int) {
+    MICRO(140),
+    SPATIAL(300),
+    MORPH(420),
+    IMMERSIVE(650)
 }
 
 object MotionSystem {
@@ -56,6 +70,43 @@ object MotionSystem {
             durationMillis = duration,
             delayMillis = delayMillis,
             easing = getEasing(preset)
+        )
+    }
+
+    fun <T> getTierSpec(
+        tier: AnimationTier,
+        isReducedMotion: Boolean = false,
+        delayMillis: Int = 0
+    ): TweenSpec<T> {
+        if (isReducedMotion) {
+            return tween(durationMillis = 0, delayMillis = 0)
+        }
+        val easing = when (tier) {
+            AnimationTier.MICRO -> LinearOutSlowInEasing
+            AnimationTier.SPATIAL -> FastOutSlowInEasing
+            AnimationTier.MORPH -> CubicBezierEasing(0.25f, 1.25f, 0.3f, 1.0f)
+            AnimationTier.IMMERSIVE -> CubicBezierEasing(0.16f, 1.0f, 0.3f, 1.0f)
+        }
+        return tween(
+            durationMillis = tier.durationMs,
+            delayMillis = delayMillis,
+            easing = easing
+        )
+    }
+
+    /**
+     * Liquid Spring Spec for drag-and-drop, collision reflow, and elastic boundary resistance
+     */
+    fun <T> getLiquidSpringSpec(isReducedMotion: Boolean = false): SpringSpec<T> {
+        if (isReducedMotion) {
+            return spring(
+                dampingRatio = Spring.DampingRatioNoBouncy,
+                stiffness = Spring.StiffnessHigh
+            )
+        }
+        return spring(
+            dampingRatio = 0.68f, // Slightly underdamped for realistic fluid liquid rebound
+            stiffness = Spring.StiffnessMediumLow
         )
     }
 
