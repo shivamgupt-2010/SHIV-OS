@@ -7,7 +7,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -36,20 +38,25 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.drawCircle
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.companion.avatar.AvatarModel
+import com.example.companion.avatar.AvatarRenderContext
+import com.example.companion.avatar.AvatarType
+import com.example.companion.avatar.CosmicShivRenderer
+import com.example.companion.avatar.IndieCacoonautRenderer
+import com.example.companion.avatar.PhantomNekoRenderer
 
 /**
- * A deliberately restrained companion visual system.  Ambient depth is static and
+ * A deliberately restrained companion visual system. Ambient depth is static and
  * interaction feedback only animates after a user action, so this UI can safely
  * live above other applications without an always-on render loop.
  */
-internal object CompanionPalette {
+object CompanionPalette {
     val Ink = Color(0xFF060914)
     val InkRaised = Color(0xFF0B1020)
     val Panel = Color(0xF0121930)
@@ -67,9 +74,23 @@ internal object CompanionPalette {
 }
 
 @Composable
-internal fun CompanionBackground(
+fun PremiumAvatar3DScene(
+    renderContext: AvatarRenderContext,
+    modifier: Modifier = Modifier
+) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        when (renderContext.avatarType) {
+            AvatarType.INDIE_CACOONAUT -> IndieCacoonautRenderer(renderContext)
+            AvatarType.PHANTOM_NEKO -> PhantomNekoRenderer(renderContext)
+            AvatarType.COSMIC_SHIV -> CosmicShivRenderer(renderContext)
+        }
+    }
+}
+
+@Composable
+fun CompanionBackground(
     modifier: Modifier = Modifier,
-    content: @Composable Box.() -> Unit
+    content: @Composable BoxScope.() -> Unit
 ) {
     Box(
         modifier = modifier
@@ -106,7 +127,7 @@ internal fun CompanionBackground(
 }
 
 @Composable
-internal fun CompanionTopBar(
+fun CompanionTopBar(
     title: String,
     subtitle: String? = null,
     onBack: (() -> Unit)? = null,
@@ -148,7 +169,7 @@ internal fun CompanionTopBar(
 }
 
 @Composable
-internal fun CompanionSectionLabel(
+fun CompanionSectionLabel(
     text: String,
     modifier: Modifier = Modifier
 ) {
@@ -163,12 +184,12 @@ internal fun CompanionSectionLabel(
 }
 
 @Composable
-internal fun CompanionSurface(
+fun CompanionSurface(
     modifier: Modifier = Modifier,
     accent: Color = CompanionPalette.Line,
     contentPadding: PaddingValues = PaddingValues(16.dp),
     onClick: (() -> Unit)? = null,
-    content: @Composable Column.() -> Unit
+    content: @Composable ColumnScope.() -> Unit
 ) {
     val interactiveModifier = if (onClick == null) Modifier else Modifier.clickable(onClick = onClick)
     Surface(
@@ -183,7 +204,7 @@ internal fun CompanionSurface(
 }
 
 @Composable
-internal fun CompanionStatusPill(
+fun CompanionStatusPill(
     label: String,
     color: Color,
     modifier: Modifier = Modifier,
@@ -217,7 +238,7 @@ internal fun CompanionStatusPill(
 }
 
 @Composable
-internal fun CompanionPrimaryButton(
+fun CompanionPrimaryButton(
     text: String,
     icon: ImageVector? = null,
     modifier: Modifier = Modifier,
@@ -246,7 +267,7 @@ internal fun CompanionPrimaryButton(
 }
 
 @Composable
-internal fun CompanionActionTile(
+fun CompanionActionTile(
     title: String,
     description: String,
     icon: ImageVector,
@@ -283,7 +304,7 @@ internal fun CompanionActionTile(
 }
 
 @Composable
-internal fun MeterBar(
+fun MeterBar(
     value: Float,
     color: Color,
     modifier: Modifier = Modifier

@@ -191,7 +191,7 @@ class FloatingAvatarService : Service() {
             setViewTreeSavedStateRegistryOwner(customLifecycleOwner)
 
             setContent {
-                val currentCtx by avatarRuntime.renderContext.collectAsState()
+                val currentCtx: AvatarRenderContext by avatarRuntime.renderContext.collectAsState()
                 val caption by speechCaption.collectAsState()
                 val activeTask by activeTaskTitle.collectAsState()
 

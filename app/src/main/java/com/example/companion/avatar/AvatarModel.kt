@@ -84,3 +84,20 @@ data class AvatarRenderContext(
     val isGhostForm: Boolean = false, // Phantom Neko form morph toggle
     val darkScreenLuminance: Float = 1.0f // 0.0 (pitch dark) to 1.0 (bright)
 )
+
+@androidx.compose.runtime.Composable
+fun PremiumAvatar3DScene(
+    renderContext: AvatarRenderContext,
+    modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier
+) {
+    androidx.compose.foundation.layout.Box(
+        modifier = modifier,
+        contentAlignment = androidx.compose.ui.Alignment.Center
+    ) {
+        when (renderContext.avatarType) {
+            AvatarType.INDIE_CACOONAUT -> IndieCacoonautRenderer(renderContext)
+            AvatarType.PHANTOM_NEKO -> PhantomNekoRenderer(renderContext)
+            AvatarType.COSMIC_SHIV -> CosmicShivRenderer(renderContext)
+        }
+    }
+}
