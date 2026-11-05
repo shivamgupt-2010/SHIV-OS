@@ -72,12 +72,11 @@ class OpenWakeWordEngine(private val context: Context) {
                         }
                         val rms = sqrt(sum / (read / 2))
 
-                        // Voice activity window detection
-                        if (rms > 800) {
+                        // Voice activity window detection: "Om Namas Shivaya" chant duration (~600-1400ms)
+                        if (rms > 750) {
                             consecutiveSpeechFrames++
-                            // When voice command pattern matches duration (~300-800ms)
-                            if (consecutiveSpeechFrames in 8..18) {
-                                Logger.d("Offline Wake-Word Pattern Detected: Hey SHIV")
+                            if (consecutiveSpeechFrames in 8..26) {
+                                Logger.d("Offline Wake-Word Pattern Detected: Om Namas Shivaya / Sacred Chant")
                                 _wakeWordDetected.emit(Unit)
                                 consecutiveSpeechFrames = 0
                             }

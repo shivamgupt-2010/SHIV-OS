@@ -82,6 +82,34 @@
             android:label="ShivAI Diagnostics"
             android:theme="@style/Theme.MyApplication" />
 
+        <!-- ShivAI Standalone Digital Companion Activity -->
+        <activity
+            android:name=".companion.CompanionActivity"
+            android:exported="true"
+            android:label="ShivAI Companion"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.MyApplication">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Floating Smart Avatar Foreground Service -->
+        <service
+            android:name=".companion.overlay.FloatingAvatarService"
+            android:foregroundServiceType="specialUse"
+            android:exported="false">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="AI Floating Smart Avatar Companion" />
+        </service>
+
+        <!-- ShivMesh Zero-Touch Cross-App Auth Provider -->
+        <provider
+            android:name=".companion.auth.ShivMeshAuthProvider"
+            android:authorities="com.shivai.auth.mesh"
+            android:exported="true" />
+
         <service android:name=".core.intelligence.NotificationIntelligenceService"
                  android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
                  android:exported="true">
