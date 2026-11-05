@@ -19,9 +19,31 @@ class ShivAIPreferences(context: Context) {
     private val _apiKey = MutableStateFlow(getApiKey())
     val apiKey: StateFlow<String> = _apiKey.asStateFlow()
 
+    init {
+        // Automatically migrate any legacy base URLs or placeholder keys
+        val currentUrl = prefs.getString(KEY_BASE_URL, null)
+        if (currentUrl.isNullOrBlank() || 
+            currentUrl.contains("real-shivai.onrender.com") || 
+            currentUrl.contains("shivai-backend.onrender.com") || 
+            !currentUrl.startsWith("https://")) {
+            setBaseUrl(DEFAULT_BASE_URL)
+        }
+        val currentKey = prefs.getString(KEY_API_KEY, null)
+        if (currentKey.isNullOrBlank() || 
+            currentKey == "test-key" || 
+            currentKey == "shivai_launcher_auth_key_v1") {
+            setApiKey(DEFAULT_API_KEY)
+        }
+    }
+
     fun getBaseUrl(): String {
         val url = prefs.getString(KEY_BASE_URL, null)
-        if (url.isNullOrBlank() || url.contains("localhost") || url.contains("10.0.2.2") || !url.startsWith("https://")) {
+        if (url.isNullOrBlank() || 
+            url.contains("real-shivai.onrender.com") || 
+            url.contains("shivai-backend.onrender.com") || 
+            url.contains("localhost") || 
+            url.contains("10.0.2.2") || 
+            !url.startsWith("https://")) {
             return DEFAULT_BASE_URL
         }
         return url.trimEnd('/')
@@ -45,7 +67,9 @@ class ShivAIPreferences(context: Context) {
 
     fun getApiKey(): String {
         val key = prefs.getString(KEY_API_KEY, null)
-        if (key.isNullOrBlank() || key == "test-key") {
+        if (key.isNullOrBlank() || 
+            key == "test-key" || 
+            key == "shivai_launcher_auth_key_v1") {
             return DEFAULT_API_KEY
         }
         return key

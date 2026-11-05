@@ -39,9 +39,9 @@ class ShivAIRealEngine(
         .writeTimeout(30, TimeUnit.SECONDS)
         .build()
 
-    private val primaryModel = "shiv-ai-sovereign"
-    private val fallbackModel = "shiv-ai-sovereign"
-    private val reasoningModel = "shiv-ai-sovereign"
+    private val primaryModel = "shiv-ai-v2"
+    private val fallbackModel = "shiv-ai-v2"
+    private val reasoningModel = "shiv-ai-v2"
 
     private val systemPrompt = """
         You are ShivAI, the high-performance cognitive AI companion and operating system intelligence of SHIV-OS Launcher.

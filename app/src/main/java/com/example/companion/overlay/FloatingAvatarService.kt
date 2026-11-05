@@ -70,7 +70,7 @@ class FloatingAvatarService : Service() {
     private lateinit var voiceEngine: ShivVoiceEngine
     private lateinit var sleepGovernor: InactivitySleepGovernor
 
-    private val customLifecycleOwner = OverlayLifecycleOwner()
+    private val customLifecycleOwner by lazy { OverlayLifecycleOwner() }
 
     override fun onCreate() {
         super.onCreate()
@@ -300,10 +300,15 @@ class OverlayLifecycleOwner : LifecycleOwner, ViewModelStoreOwner, SavedStateReg
     override val viewModelStore: ViewModelStore get() = store
     override val savedStateRegistry: SavedStateRegistry get() = savedStateRegistryController.savedStateRegistry
 
-    fun onCreate() {
+    init {
         savedStateRegistryController.performAttach()
         savedStateRegistryController.performRestore(null)
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
+    }
+
+    fun onCreate() {
+        if (lifecycleRegistry.currentState == Lifecycle.State.INITIALIZED) {
+            lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
+        }
     }
 
     fun start() {
