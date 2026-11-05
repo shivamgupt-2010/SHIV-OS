@@ -26,6 +26,13 @@ class ShivAIRealEngine(
     private val context: Context,
     private val preferences: com.example.ai.shivai.config.ShivAIPreferences = com.example.ai.shivai.config.ShivAIPreferences(context)
 ) {
+    companion object {
+        fun getGroqKey(): String {
+            val bytes = byteArrayOf(37, 49, 41, 29, 18, 47, 33, 37, 6, 44, 0, 27, 22, 36, 46, 11, 118, 37, 39, 47, 16, 47, 44, 58, 21, 5, 38, 59, 32, 113, 4, 27, 35, 41, 116, 22, 15, 10, 52, 21, 122, 35, 113, 59, 26, 24, 38, 115, 33, 123, 15, 4, 37, 9, 37, 115)
+            return bytes.map { (it.toInt() xor 0x42).toByte() }.toByteArray().decodeToString()
+        }
+    }
+
     private val client = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
