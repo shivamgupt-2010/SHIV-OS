@@ -27,7 +27,12 @@ enum class AvatarState {
     FLYING_TO_TARGET,
     TAP_CONTACT,
     HEAVY_PULL,
-    DISMISS_PUSH
+    DISMISS_PUSH,
+    HAPPY,
+    CURIOUS,
+    WORKING,
+    CONFIDENT,
+    CONFUSED
 }
 
 enum class InactivitySleepStage(val targetFps: Int, val description: String) {

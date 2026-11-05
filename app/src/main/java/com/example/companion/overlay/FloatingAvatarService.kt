@@ -25,7 +25,7 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.example.companion.auth.ShivAuthGate
 import com.example.companion.avatar.*
 import com.example.companion.voice.ShivVoiceEngine
-import com.example.core.util.Logger
+import android.util.Log
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -103,7 +103,7 @@ class FloatingAvatarService : Service() {
         // Strict Auth Gate Check
         serviceScope.launch {
             if (!ShivAuthGate.verifyAuthentication(applicationContext)) {
-                Logger.w("FloatingAvatarService: User unauthenticated. Halting companion overlay.")
+                Log.w("FloatingAvatar", "User unauthenticated. Halting companion overlay.")
                 stopSelf()
                 return@launch
             }
@@ -185,7 +185,7 @@ class FloatingAvatarService : Service() {
 
     private fun setupFloatingWindow() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
-            Logger.w("FloatingAvatarService: CanDrawOverlays permission is missing.")
+            Log.w("FloatingAvatar", "CanDrawOverlays permission is missing.")
             stopSelf()
             return
         }
@@ -246,7 +246,7 @@ class FloatingAvatarService : Service() {
                                 try {
                                     windowManager?.updateViewLayout(cv, lp)
                                 } catch (e: Exception) {
-                                    Logger.e("FloatingAvatarService updateViewLayout failed: ${e.message}")
+                                    Log.e("FloatingAvatar", "updateViewLayout failed: ${e.message}")
                                 }
                             }
                         }
@@ -263,9 +263,9 @@ class FloatingAvatarService : Service() {
         try {
             customLifecycleOwner.start()
             windowManager?.addView(composeView, windowLayoutParams)
-            Logger.i("FloatingAvatarService: Overlay attached successfully!")
+            Log.i("FloatingAvatar", "Overlay attached successfully!")
         } catch (e: Exception) {
-            Logger.e("FloatingAvatarService addView failed: ${e.message}")
+            Log.e("FloatingAvatar", "addView failed: ${e.message}")
         }
     }
 
@@ -305,7 +305,7 @@ class FloatingAvatarService : Service() {
         try {
             composeView?.let { windowManager?.removeView(it) }
         } catch (e: Exception) {
-            Logger.e("FloatingAvatarService removeView failed: ${e.message}")
+            Log.e("FloatingAvatar", "removeView failed: ${e.message}")
         }
     }
 
