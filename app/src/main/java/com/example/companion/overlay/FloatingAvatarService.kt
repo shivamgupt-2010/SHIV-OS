@@ -7,11 +7,14 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.graphics.PixelFormat
+import android.net.Uri
 import android.os.Build
 import android.os.IBinder
+import android.provider.Settings
 import android.view.Gravity
 import android.view.WindowManager
-import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.*
@@ -22,7 +25,7 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.example.companion.auth.ShivAuthGate
 import com.example.companion.avatar.*
 import com.example.companion.voice.ShivVoiceEngine
-import com.example.core.utils.Logger
+import com.example.core.util.Logger
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -36,9 +39,12 @@ class FloatingAvatarService : Service() {
     companion object {
         const val CHANNEL_ID = "shiv_companion_overlay_channel"
         const val NOTIFICATION_ID = 4048
+        const val EXTRA_AVATAR_TYPE = "EXTRA_AVATAR_TYPE"
 
-        fun start(context: Context) {
-            val intent = Intent(context, FloatingAvatarService::class.java)
+        fun start(context: Context, avatarType: AvatarType? = null) {
+            val intent = Intent(context, FloatingAvatarService::class.java).apply {
+                avatarType?.let { putExtra(EXTRA_AVATAR_TYPE, it.name) }
+            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)
             } else {
@@ -107,6 +113,16 @@ class FloatingAvatarService : Service() {
         }
     }
 
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        intent?.getStringExtra(EXTRA_AVATAR_TYPE)?.let { avatarName ->
+            try {
+                val chosenType = AvatarType.valueOf(avatarName)
+                renderContext.value = renderContext.value.copy(avatarType = chosenType)
+            } catch (_: Exception) {}
+        }
+        return START_STICKY
+    }
+
     private fun initVoiceAndSleepGovernor() {
         voiceEngine = ShivVoiceEngine(applicationContext)
         voiceEngine.startWakeWordListening()
@@ -168,6 +184,12 @@ class FloatingAvatarService : Service() {
     }
 
     private fun setupFloatingWindow() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+            Logger.w("FloatingAvatarService: CanDrawOverlays permission is missing.")
+            stopSelf()
+            return
+        }
+
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
         val overlayType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -181,7 +203,9 @@ class FloatingAvatarService : Service() {
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             overlayType,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
@@ -205,16 +229,25 @@ class FloatingAvatarService : Service() {
                     activeTaskTitle = activeTask,
                     onAvatarTapped = {
                         sleepGovernor.reportUserActivity()
-                        renderContext.value = currentCtx.copy(state = AvatarState.IDLE)
-                        speechCaption.value = "Yes, sir?"
+                        renderContext.value = currentCtx.copy(state = AvatarState.LISTENING)
+                        speechCaption.value = "Yes, Shiv? I'm listening..."
                     },
                     onDragDelta = { dx, dy ->
                         sleepGovernor.reportUserActivity()
                         windowLayoutParams?.let { lp ->
-                            lp.x += dx.toInt()
-                            lp.y += dy.toInt()
+                            val dm = resources.displayMetrics
+                            val viewW = composeView?.width?.takeIf { it > 0 } ?: 350
+                            val viewH = composeView?.height?.takeIf { it > 0 } ?: 350
+                            val maxX = (dm.widthPixels - viewW).coerceAtLeast(0)
+                            val maxY = (dm.heightPixels - viewH).coerceAtLeast(0)
+                            lp.x = (lp.x + dx.toInt()).coerceIn(0, maxX)
+                            lp.y = (lp.y + dy.toInt()).coerceIn(40, maxY)
                             composeView?.let { cv ->
-                                windowManager?.updateViewLayout(cv, lp)
+                                try {
+                                    windowManager?.updateViewLayout(cv, lp)
+                                } catch (e: Exception) {
+                                    Logger.e("FloatingAvatarService updateViewLayout failed: ${e.message}")
+                                }
                             }
                         }
                     },
@@ -227,8 +260,13 @@ class FloatingAvatarService : Service() {
             }
         }
 
-        customLifecycleOwner.start()
-        windowManager?.addView(composeView, windowLayoutParams)
+        try {
+            customLifecycleOwner.start()
+            windowManager?.addView(composeView, windowLayoutParams)
+            Logger.i("FloatingAvatarService: Overlay attached successfully!")
+        } catch (e: Exception) {
+            Logger.e("FloatingAvatarService addView failed: ${e.message}")
+        }
     }
 
     private fun createNotificationChannel() {
@@ -257,10 +295,18 @@ class FloatingAvatarService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         serviceScope.cancel()
-        voiceEngine.stopWakeWordListening()
-        sleepGovernor.stop()
+        if (::voiceEngine.isInitialized) {
+            voiceEngine.stopWakeWordListening()
+        }
+        if (::sleepGovernor.isInitialized) {
+            sleepGovernor.stop()
+        }
         customLifecycleOwner.destroy()
-        composeView?.let { windowManager?.removeView(it) }
+        try {
+            composeView?.let { windowManager?.removeView(it) }
+        } catch (e: Exception) {
+            Logger.e("FloatingAvatarService removeView failed: ${e.message}")
+        }
     }
 
     override fun onBind(intent: Intent?): IBinder? = null

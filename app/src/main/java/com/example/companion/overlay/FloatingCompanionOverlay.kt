@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
@@ -25,10 +26,10 @@ import com.example.companion.avatar.*
  * FloatingCompanionOverlay:
  * The interactive on-screen floating companion widget.
  * Features:
- * - Direct procedural rendering of the 3 chosen avatars (Indie, Cat/Ghost, Cosmic Shiv)
- * - 3-minute progressive sleep lifecycle support
- * - Draggable positioning across the phone screen
- * - Real-time speech bubble & autonomous task HUD
+ * - High-definition sprite rendering with authentic illustrations (Indie, Fox/Specter, Cosmic Shiv)
+ * - 3-minute progressive sleep lifecycle support (0 FPS deep slumber)
+ * - Smooth, clamp-safe dragging across the device screen
+ * - Luxury glassmorphic quick-action dock (AI, Code, Media, Web, Apps)
  */
 @Composable
 fun FloatingCompanionOverlay(
@@ -39,11 +40,17 @@ fun FloatingCompanionOverlay(
     onDragDelta: (Float, Float) -> Unit,
     onEmergencyStop: () -> Unit
 ) {
-    var isHudExpanded by remember { mutableStateOf(false) }
+    var isDockExpanded by remember { mutableStateOf(false) }
+
+    val accentColor = when (renderContext.avatarType) {
+        AvatarType.INDIE_CACOONAUT -> Color(0xFFFFB300)
+        AvatarType.PHANTOM_NEKO -> Color(0xFF2979FF)
+        AvatarType.COSMIC_SHIV -> Color(0xFF00E5FF)
+    }
 
     Box(
         modifier = Modifier
-            .fillMaxSize()
+            .wrapContentSize()
             .pointerInput(Unit) {
                 detectDragGestures { change, dragAmount ->
                     change.consume()
@@ -56,7 +63,7 @@ fun FloatingCompanionOverlay(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // 1. Floating Speech Bubble (Appears when companion is speaking or thinking)
+            // 1. Floating Speech Bubble (Appears when companion is speaking or listening)
             AnimatedVisibility(
                 visible = !speechCaption.isNullOrBlank(),
                 enter = fadeIn() + expandVertically(),
@@ -64,30 +71,30 @@ fun FloatingCompanionOverlay(
             ) {
                 Surface(
                     modifier = Modifier
-                        .padding(bottom = 8.dp)
+                        .padding(bottom = 6.dp)
                         .widthIn(max = 240.dp),
                     shape = RoundedCornerShape(16.dp),
-                    color = Color(0xEE0F172A),
-                    shadowElevation = 6.dp,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF00F0FF))
+                    color = Color(0xF2080A10),
+                    shadowElevation = 8.dp,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, accentColor.copy(alpha = 0.7f))
                 ) {
                     Text(
                         text = speechCaption ?: "",
-                        color = Color(0xFFE2E8F0),
-                        fontSize = 13.sp,
+                        color = Color(0xFFF1F5F9),
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
                     )
                 }
             }
 
-            // 2. Active Themed Avatar Viewport
+            // 2. Active High-Fidelity Avatar Viewport
             Box(
                 modifier = Modifier
-                    .size(110.dp)
+                    .size(125.dp)
                     .clickable {
                         onAvatarTapped()
-                        isHudExpanded = !isHudExpanded
+                        isDockExpanded = !isDockExpanded
                     },
                 contentAlignment = Alignment.Center
             ) {
@@ -104,61 +111,100 @@ fun FloatingCompanionOverlay(
                 }
             }
 
-            // 3. Autonomous Task HUD / Kill Switch
+            // 3. Reference-Accurate Quick Action Dock (Image 3 Peek Dock)
             AnimatedVisibility(
-                visible = isHudExpanded || !activeTaskTitle.isNullOrBlank(),
-                enter = fadeIn() + slideInVertically(),
-                exit = fadeOut() + slideOutVertically()
+                visible = isDockExpanded,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
             ) {
                 Surface(
                     modifier = Modifier
-                        .padding(top = 8.dp)
-                        .widthIn(max = 260.dp),
-                    shape = RoundedCornerShape(18.dp),
-                    color = Color(0xFA0F172A),
-                    border = androidx.compose.foundation.BorderStroke(1.2f.dp, Color(0xFF38BDF8))
+                        .padding(top = 6.dp)
+                        .widthIn(max = 240.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color(0xF5080A10),
+                    shadowElevation = 10.dp,
+                    border = androidx.compose.foundation.BorderStroke(1.2.dp, accentColor.copy(alpha = 0.8f))
                 ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
+                    Column(
+                        modifier = Modifier.padding(10.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Hello Shiv! 💜 How can I help?",
+                            color = Color(0xFFE2E8F0),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = "ShivAI Companion",
-                                color = Color(0xFF38BDF8),
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            IconButton(
-                                onClick = onEmergencyStop,
-                                modifier = Modifier.size(24.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.StopCircle,
-                                    contentDescription = "Stop Task",
-                                    tint = Color(0xFFEF4444)
-                                )
+                            DockActionButton(icon = Icons.Default.AutoAwesome, tint = accentColor, label = "AI") {
+                                onAvatarTapped()
+                            }
+                            DockActionButton(icon = Icons.Default.Code, tint = Color(0xFF38BDF8), label = "Code") {
+                                onAvatarTapped()
+                            }
+                            DockActionButton(icon = Icons.Default.PlayArrow, tint = Color(0xFFA855F7), label = "Media") {
+                                onAvatarTapped()
+                            }
+                            DockActionButton(icon = Icons.Default.Language, tint = Color(0xFF34D399), label = "Web") {
+                                onAvatarTapped()
+                            }
+                            DockActionButton(icon = Icons.Default.StopCircle, tint = Color(0xFFEF4444), label = "Stop") {
+                                onEmergencyStop()
+                                isDockExpanded = false
                             }
                         }
 
                         if (!activeTaskTitle.isNullOrBlank()) {
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
-                                text = "Executing: $activeTaskTitle",
-                                color = Color.White,
-                                fontSize = 12.sp
+                                text = "Task: $activeTaskTitle",
+                                color = Color(0xFF94A3B8),
+                                fontSize = 10.sp
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.height(3.dp))
                             LinearProgressIndicator(
-                                modifier = Modifier.fillMaxWidth().height(3.dp),
-                                color = Color(0xFF00F0FF),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(2.5.dp),
+                                color = accentColor,
                                 trackColor = Color(0xFF1E293B)
                             )
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun DockActionButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    tint: Color,
+    label: String,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.size(34.dp),
+        shape = CircleShape,
+        color = Color(0x33FFFFFF),
+        border = androidx.compose.foundation.BorderStroke(0.8.dp, tint.copy(alpha = 0.6f))
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = tint,
+                modifier = Modifier.size(18.dp)
+            )
         }
     }
 }

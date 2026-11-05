@@ -159,7 +159,7 @@ fun CommandDeckScreen(
                                 val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}"))
                                 context.startActivity(intent)
                             } else {
-                                FloatingAvatarService.start(context)
+                                FloatingAvatarService.start(context, currentAvatar)
                                 isOverlayEnabled = true
                             }
                         } else {

@@ -32,6 +32,7 @@ fun PersonaStudioScreen(
     onAvatarSelected: (AvatarType) -> Unit,
     onBack: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     var selectedVoice by remember { mutableStateOf("hi-IN-MadhurNeural") }
     var wakeWordSensitivity by remember { mutableFloatStateOf(0.85f) }
     var selectedSkin by remember { mutableStateOf(SeasonalSkin.DEFAULT) }
@@ -69,7 +70,10 @@ fun PersonaStudioScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 4.dp)
-                    .clickable { onAvatarSelected(avatar) },
+                    .clickable {
+                        onAvatarSelected(avatar)
+                        com.example.companion.overlay.FloatingAvatarService.start(context, avatar)
+                    },
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = if (isSelected) Color(0xFF1E293B) else Color(0xFF0F172A)
