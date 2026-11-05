@@ -44,7 +44,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.companion.avatar.AvatarModel
 import com.example.companion.avatar.AvatarRenderContext
 import com.example.companion.avatar.AvatarType
 import com.example.companion.avatar.CosmicShivRenderer
