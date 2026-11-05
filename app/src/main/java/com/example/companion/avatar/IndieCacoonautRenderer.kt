@@ -64,15 +64,19 @@ fun IndieCacoonautRenderer(
     }
 
     // 3. Listening Acoustic Wave Pulse
-    val waveRadius by infiniteTransition.animateFloat(
-        initialValue = 0.8f,
-        targetValue = 1.35f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "listening_wave"
-    )
+    // Keep the repeating wave completely out of the composition unless we are
+    // actively listening. This avoids an unnecessary animation clock at idle.
+    val waveRadius = if (context.state == AvatarState.LISTENING && !isSlumber) {
+        infiniteTransition.animateFloat(
+            initialValue = 0.8f,
+            targetValue = 1.35f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(1200, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "listening_wave"
+        ).value
+    } else 1f
 
     // Select sprite resource based on state & slumber lifecycle
     val spriteRes = when {

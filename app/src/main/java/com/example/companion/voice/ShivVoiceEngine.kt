@@ -7,7 +7,6 @@ import com.example.core.utils.Logger
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import org.json.JSONObject
-import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
@@ -38,8 +37,9 @@ class ShivVoiceEngine(
     val wakeWordDetected: SharedFlow<String> = _wakeWordDetected.asSharedFlow()
 
     private var audioRecord: AudioRecord? = null
-    private var audioTrack: AudioTrack? = null
     private var wakeJob: Job? = null
+    private val audioLock = Any()
+    private var wakeGeneration = 0L
 
     private val sampleRate = 16000
     private val channelConfig = AudioFormat.CHANNEL_IN_MONO
@@ -51,15 +51,19 @@ class ShivVoiceEngine(
      */
     @SuppressLint("MissingPermission")
     fun startWakeWordListening() {
-        if (_isListening.value) return
-        _isListening.value = true
+        val generation = synchronized(audioLock) {
+            if (_isListening.value || wakeJob?.isActive == true) return
+            _isListening.value = true
+            ++wakeGeneration
+        }
 
         wakeJob = scope.launch {
+            var ownedRecord: AudioRecord? = null
             val minBuf = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat)
             val bufferSize = maxOf(minBuf, 2048)
 
             try {
-                audioRecord = AudioRecord(
+                val candidate = AudioRecord(
                     MediaRecorder.AudioSource.MIC,
                     sampleRate,
                     channelConfig,
@@ -67,24 +71,40 @@ class ShivVoiceEngine(
                     bufferSize
                 )
 
-                if (audioRecord?.state != AudioRecord.STATE_INITIALIZED) {
+                if (candidate.state != AudioRecord.STATE_INITIALIZED) {
+                    releaseRecord(candidate)
                     Logger.e("ShivVoiceEngine AudioRecord initialization failed")
                     return@launch
                 }
 
-                audioRecord?.startRecording()
+                val accepted = synchronized(audioLock) {
+                    if (generation != wakeGeneration || !_isListening.value) {
+                        false
+                    } else {
+                        audioRecord = candidate
+                        ownedRecord = candidate
+                        true
+                    }
+                }
+                if (!accepted) {
+                    releaseRecord(candidate)
+                    return@launch
+                }
+
+                candidate.startRecording()
                 val buffer = ByteArray(bufferSize)
                 var consecutiveSpeechFrames = 0
 
                 while (isActive && _isListening.value) {
-                    val read = audioRecord?.read(buffer, 0, buffer.size) ?: -1
+                    val read = candidate.read(buffer, 0, buffer.size)
                     if (read > 0) {
                         var sum = 0.0
-                        for (i in 0 until read step 2) {
+                        for (i in 0 until (read - 1) step 2) {
                             val sample = (buffer[i + 1].toInt() shl 8) or (buffer[i].toInt() and 0xFF)
                             sum += sample * sample
                         }
-                        val rms = sqrt(sum / (read / 2))
+                        val sampleCount = (read / 2).coerceAtLeast(1)
+                        val rms = sqrt(sum / sampleCount)
 
                         if (rms > 750) {
                             consecutiveSpeechFrames++
@@ -103,15 +123,26 @@ class ShivVoiceEngine(
             } catch (e: Exception) {
                 Logger.e("Wake Word error: ${e.message}")
             } finally {
-                cleanupRecord()
+                synchronized(audioLock) {
+                    if (generation == wakeGeneration) {
+                        _isListening.value = false
+                        if (audioRecord === ownedRecord) audioRecord = null
+                    }
+                }
+                releaseRecord(ownedRecord)
             }
         }
     }
 
     fun stopWakeWordListening() {
-        _isListening.value = false
+        val activeRecord = synchronized(audioLock) {
+            _isListening.value = false
+            ++wakeGeneration
+            audioRecord.also { audioRecord = null }
+        }
         wakeJob?.cancel()
-        cleanupRecord()
+        wakeJob = null
+        releaseRecord(activeRecord)
     }
 
     /**
@@ -164,11 +195,12 @@ class ShivVoiceEngine(
         while (inputStream.read(buffer).also { read = it } != -1) {
             // Calculate dynamic chunk amplitude
             var sum = 0.0
-            for (i in 0 until read step 2) {
+            for (i in 0 until (read - 1) step 2) {
                 val sample = (buffer[i + 1].toInt() shl 8) or (buffer[i].toInt() and 0xFF)
                 sum += Math.abs(sample.toDouble())
             }
-            val normAmp = (sum / (read / 2) / 32768.0).toFloat().coerceIn(0f, 1f)
+            val sampleCount = (read / 2).coerceAtLeast(1)
+            val normAmp = (sum / sampleCount / 32768.0).toFloat().coerceIn(0f, 1f)
             _amplitude.value = normAmp
             delay(20)
         }
@@ -186,11 +218,10 @@ class ShivVoiceEngine(
         }
     }
 
-    private fun cleanupRecord() {
+    private fun releaseRecord(record: AudioRecord?) {
         try {
-            audioRecord?.stop()
-            audioRecord?.release()
-            audioRecord = null
+            record?.stop()
+            record?.release()
         } catch (_: Exception) {}
     }
 }

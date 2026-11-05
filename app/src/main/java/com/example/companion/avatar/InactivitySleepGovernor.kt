@@ -26,7 +26,7 @@ class InactivitySleepGovernor(
     private val context: Context,
     private val onSlumberStateChanged: ((InactivitySleepStage) -> Unit)? = null,
     private val onDeviceShaken: (() -> Unit)? = null,
-    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default)
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 ) : SensorEventListener {
 
     private val _sleepStage = MutableStateFlow(InactivitySleepStage.ENGAGED_60FPS)
@@ -34,42 +34,68 @@ class InactivitySleepGovernor(
 
     private var lastActivityTime = SystemClock.elapsedRealtime()
     private var tickerJob: Job? = null
+    private var isStarted = false
+    private var isSensorRegistered = false
 
-    private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
+    private val sensorManager = context.applicationContext
+        .getSystemService(Context.SENSOR_SERVICE) as? SensorManager
     private val accelerometer = sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
     fun start() {
-        // Start 3-minute monitoring loop
-        tickerJob?.cancel()
-        tickerJob = scope.launch {
-            while (isActive) {
-                delay(1000) // 1 second check
-                evaluateInactivity()
-            }
-        }
+        if (isStarted) return
+        isStarted = true
+        lastActivityTime = SystemClock.elapsedRealtime()
+        startTickerIfNeeded()
 
-        // Register accelerometer for physical device interaction
-        accelerometer?.let {
-            sensorManager?.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
+        // The normal sampling rate is enough for a deliberate shake and costs
+        // materially less battery than the UI refresh sampling rate.
+        if (!isSensorRegistered) {
+            accelerometer?.let {
+                isSensorRegistered = sensorManager?.registerListener(
+                    this,
+                    it,
+                    SensorManager.SENSOR_DELAY_NORMAL
+                ) == true
+            }
         }
     }
 
     fun stop() {
+        isStarted = false
         tickerJob?.cancel()
-        sensorManager?.unregisterListener(this)
+        tickerJob = null
+        if (isSensorRegistered) {
+            sensorManager?.unregisterListener(this)
+            isSensorRegistered = false
+        }
     }
 
     /**
      * Resets the 3-minute timer on any user touch, speech input, or task activity.
      */
     fun reportUserActivity() {
+        if (!isStarted) return
         lastActivityTime = SystemClock.elapsedRealtime()
         if (_sleepStage.value != InactivitySleepStage.ENGAGED_60FPS) {
             updateStage(InactivitySleepStage.ENGAGED_60FPS)
         }
+        startTickerIfNeeded()
     }
 
-    private fun evaluateInactivity() {
+    private fun startTickerIfNeeded() {
+        if (!isStarted || tickerJob?.isActive == true) return
+        tickerJob = scope.launch {
+            while (isActive && isStarted) {
+                val stage = evaluateInactivity()
+                // Once the companion reaches deep slumber, leave no timer
+                // running. reportUserActivity() restarts the ticker on wake.
+                if (stage == InactivitySleepStage.DEEP_SLUMBER_0FPS) break
+                delay(nextCheckDelayMillis())
+            }
+        }
+    }
+
+    private fun evaluateInactivity(): InactivitySleepStage {
         val elapsedSeconds = (SystemClock.elapsedRealtime() - lastActivityTime) / 1000
 
         val newStage = when {
@@ -82,6 +108,18 @@ class InactivitySleepGovernor(
         if (newStage != _sleepStage.value) {
             updateStage(newStage)
         }
+        return newStage
+    }
+
+    /**
+     * Checks rapidly only around the active boundary. The ambient and drowsy
+     * intervals can be evaluated less often with no visible behavioural cost.
+     */
+    private fun nextCheckDelayMillis(): Long = when (_sleepStage.value) {
+        InactivitySleepStage.ENGAGED_60FPS -> 1_000L
+        InactivitySleepStage.AMBIENT_30FPS -> 5_000L
+        InactivitySleepStage.DROWSY_15FPS -> 5_000L
+        InactivitySleepStage.DEEP_SLUMBER_0FPS -> Long.MAX_VALUE
     }
 
     private fun updateStage(stage: InactivitySleepStage) {
@@ -93,6 +131,7 @@ class InactivitySleepGovernor(
     private var lastAccelX = 0f
     private var lastAccelY = 0f
     private var lastAccelZ = 0f
+    private var lastShakeAt = 0L
 
     override fun onSensorChanged(event: SensorEvent?) {
         if (event == null) return
@@ -110,7 +149,9 @@ class InactivitySleepGovernor(
 
         val gForce = sqrt((deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ).toDouble()).toFloat()
 
-        if (gForce > 14f) { // Noticeable shake or drop
+        val now = SystemClock.elapsedRealtime()
+        if (gForce > 14f && now - lastShakeAt > 900L) { // Noticeable shake or drop
+            lastShakeAt = now
             reportUserActivity()
             onDeviceShaken?.invoke()
         }

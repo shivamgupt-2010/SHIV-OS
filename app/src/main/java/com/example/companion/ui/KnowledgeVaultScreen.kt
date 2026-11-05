@@ -1,158 +1,198 @@
 package com.example.companion.ui
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/**
- * KnowledgeVaultScreen:
- * Long-term memory browser synchronized with Shiv DB (https://shiv-database.onrender.com).
- * Manages user preferences, work context, and personal entities.
- */
-@Composable
-fun KnowledgeVaultScreen(
-    onBack: () -> Unit
-) {
-    data class VaultItem(val category: String, val key: String, val value: String)
+private data class VaultMemory(val category: String, val key: String, val value: String, val score: Int)
 
-    val memoryItems = remember {
+@Composable
+fun KnowledgeVaultScreen(onBack: () -> Unit) {
+    val memories = remember {
         mutableStateListOf(
-            VaultItem("Personal", "user_identity", "Krishn (SHV-10482) - Primary Creator"),
-            VaultItem("Preferences", "diet_preference", "Vegetarian, likes South Indian filter coffee"),
-            VaultItem("Work", "active_project", "ShivAI Android Companion & Sovereign OS"),
-            VaultItem("Automation", "cab_preference", "Prefers Uber Go unless Ola Mini is >₹50 cheaper"),
-            VaultItem("Focus", "study_target", "Daily 90 mins Deep ML & Neural Networks block")
+            VaultMemory("Profile", "Primary project", "ShivAI Android Companion & Launcher", 96),
+            VaultMemory("Preference", "Work style", "Focused sessions with short, concise prompts", 91),
+            VaultMemory("Routine", "Study target", "Ninety minutes of deep learning practice each day", 88),
+            VaultMemory("Automation", "Travel preference", "Choose a lower-cost route when commute time is similar", 79)
         )
     }
-
+    var query by remember { mutableStateOf("") }
+    var memoryToDelete by remember { mutableStateOf<VaultMemory?>(null) }
+    var isAdding by remember { mutableStateOf(false) }
     var newKey by remember { mutableStateOf("") }
     var newValue by remember { mutableStateOf("") }
-    var isAdding by remember { mutableStateOf(false) }
+    val visibleMemories = memories.filter { it.key.contains(query, ignoreCase = true) || it.value.contains(query, ignoreCase = true) || it.category.contains(query, ignoreCase = true) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(Color(0xFF020617), Color(0xFF0F172A), Color(0xFF020617))
-                )
-            )
-            .padding(16.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+    CompanionBackground {
+        LazyColumn(
+            modifier = Modifier.padding(horizontal = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
-                }
-                Text("KNOWLEDGE VAULT", color = Color(0xFF00F0FF), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            }
-            IconButton(onClick = { isAdding = true }) {
-                Icon(Icons.Default.AddCircle, contentDescription = "Add Memory", tint = Color(0xFF10B981))
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Text("SYNCED WITH SHIV DATABASE", color = Color(0xFF64748B), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(8.dp))
-
-        LazyColumn(modifier = Modifier.weight(1f)) {
-            items(memoryItems) { item ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A)),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF1E293B))
-                ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = Color(0x3338BDF8)
-                            ) {
-                                Text(
-                                    item.category.uppercase(),
-                                    color = Color(0xFF38BDF8),
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
-                            }
-                            IconButton(
-                                onClick = { memoryItems.remove(item) },
-                                modifier = Modifier.size(18.dp)
-                            ) {
-                                Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color(0xFFEF4444), modifier = Modifier.size(16.dp))
-                            }
+            item { Spacer(Modifier.height(12.dp)) }
+            item {
+                CompanionTopBar(
+                    title = "Knowledge Vault",
+                    subtitle = "Your private, on-device context",
+                    onBack = onBack,
+                    action = {
+                        IconButton(onClick = { isAdding = true }) {
+                            Icon(Icons.Default.Add, contentDescription = "Add memory", tint = CompanionPalette.Green)
                         }
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(item.key, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        Text(item.value, color = Color(0xFF94A3B8), fontSize = 12.sp, modifier = Modifier.padding(top = 2.dp))
+                    }
+                )
+            }
+            item {
+                CompanionSurface(accent = CompanionPalette.Green) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Lock, contentDescription = null, tint = CompanionPalette.Green)
+                        Spacer(Modifier.width(10.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Private by default", color = CompanionPalette.Text, fontWeight = FontWeight.SemiBold)
+                            Text("Memory stays on this device until you explicitly connect a service.", color = CompanionPalette.Muted, fontSize = 12.sp)
+                        }
+                        CompanionStatusPill("Local", CompanionPalette.Green)
                     }
                 }
             }
-        }
-
-        if (isAdding) {
-            AlertDialog(
-                onDismissRequest = { isAdding = false },
-                title = { Text("Add Memory Item", color = Color.White) },
-                text = {
-                    Column {
-                        OutlinedTextField(
-                            value = newKey,
-                            onValueChange = { newKey = it },
-                            label = { Text("Memory Key") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = newValue,
-                            onValueChange = { newValue = it },
-                            label = { Text("Memory Value / Context") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                },
-                confirmButton = {
-                    Button(onClick = {
-                        if (newKey.isNotBlank() && newValue.isNotBlank()) {
-                            memoryItems.add(VaultItem("Custom", newKey, newValue))
-                            newKey = ""
-                            newValue = ""
-                            isAdding = false
-                        }
-                    }) {
-                        Text("Save to Shiv DB")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { isAdding = false }) { Text("Cancel") }
-                },
-                containerColor = Color(0xFF0F172A)
-            )
+            item {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    placeholder = { Text("Search your memory") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = CompanionPalette.Cyan) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = CompanionPalette.Text,
+                        unfocusedTextColor = CompanionPalette.Text,
+                        focusedBorderColor = CompanionPalette.Cyan,
+                        unfocusedBorderColor = CompanionPalette.Line,
+                        cursorColor = CompanionPalette.Cyan
+                    )
+                )
+            }
+            item { CompanionSectionLabel("${visibleMemories.size} memories") }
+            items(visibleMemories.size) { index ->
+                val memory = visibleMemories[index]
+                MemoryCard(memory = memory, onDelete = { memoryToDelete = memory })
+            }
+            item { Spacer(Modifier.height(28.dp)) }
         }
     }
+
+    if (isAdding) {
+        VaultEditDialog(
+            key = newKey,
+            value = newValue,
+            onKeyChanged = { newKey = it },
+            onValueChanged = { newValue = it },
+            onDismiss = { isAdding = false },
+            onSave = {
+                if (newKey.isNotBlank() && newValue.isNotBlank()) {
+                    memories.add(0, VaultMemory("Personal", newKey.trim(), newValue.trim(), 72))
+                    newKey = ""
+                    newValue = ""
+                    isAdding = false
+                }
+            }
+        )
+    }
+    memoryToDelete?.let { memory ->
+        AlertDialog(
+            onDismissRequest = { memoryToDelete = null },
+            containerColor = CompanionPalette.PanelStrong,
+            titleContentColor = CompanionPalette.Text,
+            textContentColor = CompanionPalette.Muted,
+            title = { Text("Remove this memory?") },
+            text = { Text("This removes “${memory.key}” from the local vault.") },
+            confirmButton = {
+                TextButton(onClick = { memories.remove(memory); memoryToDelete = null }) { Text("Remove", color = CompanionPalette.Red) }
+            },
+            dismissButton = { TextButton(onClick = { memoryToDelete = null }) { Text("Keep", color = CompanionPalette.Cyan) } }
+        )
+    }
+}
+
+@Composable
+private fun MemoryCard(memory: VaultMemory, onDelete: () -> Unit) {
+    CompanionSurface(accent = CompanionPalette.Line) {
+        Row(verticalAlignment = Alignment.Top) {
+            Column(modifier = Modifier.weight(1f)) {
+                CompanionStatusPill(memory.category, CompanionPalette.Violet)
+                Spacer(Modifier.height(10.dp))
+                Text(memory.key, color = CompanionPalette.Text, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                Spacer(Modifier.height(3.dp))
+                Text(memory.value, color = CompanionPalette.Muted, fontSize = 12.sp, lineHeight = 17.sp)
+            }
+            IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                Icon(Icons.Default.DeleteOutline, contentDescription = "Remove memory", tint = CompanionPalette.Quiet, modifier = Modifier.size(18.dp))
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Relevance", color = CompanionPalette.Quiet, fontSize = 11.sp)
+            Spacer(Modifier.width(8.dp))
+            MeterBar(memory.score / 100f, CompanionPalette.Cyan, Modifier.weight(1f))
+            Spacer(Modifier.width(8.dp))
+            Text("${memory.score}%", color = CompanionPalette.Cyan, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
+
+@Composable
+private fun VaultEditDialog(
+    key: String,
+    value: String,
+    onKeyChanged: (String) -> Unit,
+    onValueChanged: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onSave: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = CompanionPalette.PanelStrong,
+        titleContentColor = CompanionPalette.Text,
+        textContentColor = CompanionPalette.Muted,
+        title = { Text("Save to your vault") },
+        text = {
+            Column {
+                OutlinedTextField(value = key, onValueChange = onKeyChanged, label = { Text("Memory title") }, modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(10.dp))
+                OutlinedTextField(value = value, onValueChange = onValueChanged, label = { Text("What should ShivAI remember?") }, minLines = 3, modifier = Modifier.fillMaxWidth())
+            }
+        },
+        confirmButton = { TextButton(onClick = onSave, enabled = key.isNotBlank() && value.isNotBlank()) { Text("Save", color = CompanionPalette.Cyan) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = CompanionPalette.Muted) } }
+    )
 }

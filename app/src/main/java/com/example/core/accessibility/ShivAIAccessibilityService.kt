@@ -65,7 +65,13 @@ class ShivAIAccessibilityService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        // Zero passive background tracking. Only active when ShivAI actions are executed.
+        if (event == null) return
+        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            val pkg = event.packageName?.toString()
+            if (!pkg.isNullOrBlank()) {
+                com.example.companion.personas.StrictCoachAgent.activeInstance?.onPackageForegrounded(pkg)
+            }
+        }
     }
 
     override fun onInterrupt() {

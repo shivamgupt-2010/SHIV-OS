@@ -60,15 +60,19 @@ fun PhantomNekoRenderer(
         remember { mutableFloatStateOf(0f) }
     }
 
-    val waveRadius by infiniteTransition.animateFloat(
-        initialValue = 0.8f,
-        targetValue = 1.35f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1100, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "listening_wave"
-    )
+    // Only create the repeating acoustic pulse while listening; idle and
+    // sleeping avatars do not keep a redundant animation clock alive.
+    val waveRadius = if (context.state == AvatarState.LISTENING && !isSlumber) {
+        infiniteTransition.animateFloat(
+            initialValue = 0.8f,
+            targetValue = 1.35f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(1100, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "listening_wave"
+        ).value
+    } else 1f
 
     // Select form: Morph to Ghost during rapid flight or heavy drag; Fox while calm
     val isGhostMode = context.isGhostForm ||

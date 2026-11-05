@@ -7,7 +7,6 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.graphics.PixelFormat
-import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import android.provider.Settings
@@ -63,12 +62,14 @@ class FloatingAvatarService : Service() {
 
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
-    private val renderContext = MutableStateFlow(AvatarRenderContext())
+    private val avatarRuntime = AvatarRuntimeController()
     private val speechCaption = MutableStateFlow<String?>("Om Namas Shivaya 🙏")
     private val activeTaskTitle = MutableStateFlow<String?>(null)
 
     private lateinit var voiceEngine: ShivVoiceEngine
     private lateinit var sleepGovernor: InactivitySleepGovernor
+    private var eventResetJob: Job? = null
+    private var overlayAttached = false
 
     private val customLifecycleOwner by lazy { OverlayLifecycleOwner() }
 
@@ -96,73 +97,65 @@ class FloatingAvatarService : Service() {
         intent?.getStringExtra(EXTRA_AVATAR_TYPE)?.let { avatarName ->
             try {
                 val chosenType = AvatarType.valueOf(avatarName)
-                renderContext.value = renderContext.value.copy(avatarType = chosenType)
+                avatarRuntime.selectAvatar(chosenType)
             } catch (_: Exception) {}
         }
-        return START_STICKY
+        // This overlay is explicitly started by the user. Do not recreate a
+        // microphone and overlay window after the OS kills the service.
+        return START_NOT_STICKY
     }
 
     private fun initVoiceAndSleepGovernor() {
         voiceEngine = ShivVoiceEngine(applicationContext)
-        voiceEngine.startWakeWordListening()
 
-        // Sync audio amplitude with avatar mouth phonemes
-        serviceScope.launch {
-            voiceEngine.amplitude.collect { amp ->
-                renderContext.value = renderContext.value.copy(
-                    audioAmplitude = amp,
-                    state = if (amp > 0.05f) AvatarState.SPEAKING else renderContext.value.state
-                )
-            }
-        }
-
-        // Handle Wake Word "Om Namas Shivaya"
-        serviceScope.launch {
-            voiceEngine.wakeWordDetected.collect {
-                sleepGovernor.reportUserActivity()
-                renderContext.value = renderContext.value.copy(state = AvatarState.LISTENING)
-                speechCaption.value = "Listening to you, sir..."
-                voiceEngine.speak("Om Namas Shivaya. How can I help you today?") {
-                    renderContext.value = renderContext.value.copy(state = AvatarState.IDLE)
-                }
-            }
-        }
-
-        // 3-Minute Progressive Inactivity Sleep Governor
+        // Construct the governor before starting audio collectors. A wake-word
+        // callback can otherwise arrive while the lateinit field is unset.
         sleepGovernor = InactivitySleepGovernor(
             context = applicationContext,
             onSlumberStateChanged = { newStage ->
-                renderContext.value = renderContext.value.copy(
-                    sleepStage = newStage,
-                    state = if (newStage == InactivitySleepStage.DEEP_SLUMBER_0FPS) AvatarState.SLEEPING
-                           else if (newStage == InactivitySleepStage.DROWSY_15FPS) AvatarState.DROWSY
-                           else renderContext.value.state
-                )
+                avatarRuntime.applySleepStage(newStage)
                 if (newStage == InactivitySleepStage.DEEP_SLUMBER_0FPS) {
                     speechCaption.value = null
                 }
             },
             onDeviceShaken = {
                 // Device shaken/dropped: playful tumble reaction
-                renderContext.value = renderContext.value.copy(
-                    situationalEvent = SituationalEvent.PHONE_SHAKE_TUMBLE,
-                    state = AvatarState.ALERT
-                )
+                avatarRuntime.showEvent(SituationalEvent.PHONE_SHAKE_TUMBLE)
                 speechCaption.value = "Whoa! That was quite a shake!"
-                serviceScope.launch {
+                eventResetJob?.cancel()
+                eventResetJob = serviceScope.launch {
                     delay(2500)
-                    renderContext.value = renderContext.value.copy(
-                        situationalEvent = SituationalEvent.NONE,
-                        state = AvatarState.IDLE
-                    )
+                    avatarRuntime.clearEvent()
                     speechCaption.value = null
                 }
             }
         )
         sleepGovernor.start()
+
+        // Sync audio amplitude with avatar mouth phonemes.
+        serviceScope.launch {
+            voiceEngine.amplitude.collect { amp ->
+                avatarRuntime.updateVoiceAmplitude(amp)
+            }
+        }
+
+        // Handle Wake Word "Om Namas Shivaya".
+        serviceScope.launch {
+            voiceEngine.wakeWordDetected.collect {
+                sleepGovernor.reportUserActivity()
+                avatarRuntime.reportInteraction(AvatarState.LISTENING)
+                speechCaption.value = "Listening to you, sir..."
+                voiceEngine.speak("Om Namas Shivaya. How can I help you today?") {
+                    avatarRuntime.setState(AvatarState.IDLE)
+                }
+            }
+        }
+
+        voiceEngine.startWakeWordListening()
     }
 
     private fun setupFloatingWindow() {
+        if (overlayAttached) return
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
             Log.w("FloatingAvatar", "CanDrawOverlays permission is missing.")
             stopSelf()
@@ -198,7 +191,7 @@ class FloatingAvatarService : Service() {
             setViewTreeSavedStateRegistryOwner(customLifecycleOwner)
 
             setContent {
-                val currentCtx by renderContext.collectAsState()
+                val currentCtx by avatarRuntime.renderContext.collectAsState()
                 val caption by speechCaption.collectAsState()
                 val activeTask by activeTaskTitle.collectAsState()
 
@@ -208,11 +201,12 @@ class FloatingAvatarService : Service() {
                     activeTaskTitle = activeTask,
                     onAvatarTapped = {
                         sleepGovernor.reportUserActivity()
-                        renderContext.value = currentCtx.copy(state = AvatarState.LISTENING)
+                        avatarRuntime.reportInteraction(AvatarState.LISTENING)
                         speechCaption.value = "Yes, Shiv? I'm listening..."
                     },
                     onDragDelta = { dx, dy ->
                         sleepGovernor.reportUserActivity()
+                        avatarRuntime.reportInteraction()
                         windowLayoutParams?.let { lp ->
                             val dm = resources.displayMetrics
                             val viewW = composeView?.width?.takeIf { it > 0 } ?: 350
@@ -233,18 +227,50 @@ class FloatingAvatarService : Service() {
                     onEmergencyStop = {
                         activeTaskTitle.value = null
                         speechCaption.value = "Automation paused."
-                        renderContext.value = currentCtx.copy(state = AvatarState.IDLE)
+                        avatarRuntime.reportInteraction()
+                    },
+                    onActionAI = {
+                        sleepGovernor.reportUserActivity()
+                        avatarRuntime.reportInteraction(AvatarState.LISTENING)
+                        speechCaption.value = "Listening to you, Shiv..."
+                        voiceEngine.speak("I am here, Shiv. What would you like to achieve?") {
+                            avatarRuntime.setState(AvatarState.IDLE)
+                        }
+                    },
+                    onActionCode = {
+                        sleepGovernor.reportUserActivity()
+                        avatarRuntime.reportInteraction(AvatarState.WORKING)
+                        activeTaskTitle.value = "Coding Pilot Active"
+                        speechCaption.value = "Coding Pilot online. Workspace primed."
+                        voiceEngine.speak("Coding Pilot online. Ready to scaffold and debug code.")
+                    },
+                    onActionMedia = {
+                        sleepGovernor.reportUserActivity()
+                        avatarRuntime.reportInteraction(AvatarState.WORKING)
+                        activeTaskTitle.value = "Media Matrix Active"
+                        speechCaption.value = "Media Engine primed for video & voice."
+                        voiceEngine.speak("Media Matrix online. Ready to assemble video timelines.")
+                    },
+                    onActionWeb = {
+                        sleepGovernor.reportUserActivity()
+                        avatarRuntime.reportInteraction(AvatarState.THINKING)
+                        activeTaskTitle.value = "Web Intelligence"
+                        speechCaption.value = "Scanning sovereign intelligence network..."
+                        voiceEngine.speak("Web research agent activated.")
                     }
                 )
             }
         }
 
         try {
-            customLifecycleOwner.start()
             windowManager?.addView(composeView, windowLayoutParams)
+            overlayAttached = true
             Log.i("FloatingAvatar", "Overlay attached successfully!")
         } catch (e: Exception) {
             Log.e("FloatingAvatar", "addView failed: ${e.message}")
+            composeView?.disposeComposition()
+            composeView = null
+            stopSelf()
         }
     }
 
@@ -272,20 +298,26 @@ class FloatingAvatarService : Service() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
-        serviceScope.cancel()
+        eventResetJob?.cancel()
         if (::voiceEngine.isInitialized) {
             voiceEngine.stopWakeWordListening()
         }
         if (::sleepGovernor.isInitialized) {
             sleepGovernor.stop()
         }
-        customLifecycleOwner.destroy()
         try {
-            composeView?.let { windowManager?.removeView(it) }
+            composeView?.let { view ->
+                if (overlayAttached) windowManager?.removeViewImmediate(view)
+                view.disposeComposition()
+            }
         } catch (e: Exception) {
             Log.e("FloatingAvatar", "removeView failed: ${e.message}")
         }
+        overlayAttached = false
+        composeView = null
+        customLifecycleOwner.destroy()
+        serviceScope.cancel()
+        super.onDestroy()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -312,14 +344,24 @@ class OverlayLifecycleOwner : LifecycleOwner, ViewModelStoreOwner, SavedStateReg
     }
 
     fun start() {
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
+        if (lifecycleRegistry.currentState == Lifecycle.State.CREATED) {
+            lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
+        }
+        if (lifecycleRegistry.currentState == Lifecycle.State.STARTED) {
+            lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
+        }
     }
 
     fun destroy() {
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+        if (lifecycleRegistry.currentState == Lifecycle.State.RESUMED) {
+            lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
+        }
+        if (lifecycleRegistry.currentState == Lifecycle.State.STARTED) {
+            lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+        }
+        if (lifecycleRegistry.currentState == Lifecycle.State.CREATED) {
+            lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+        }
         store.clear()
     }
 }

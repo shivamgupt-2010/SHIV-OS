@@ -1,182 +1,180 @@
 package com.example.companion.ui
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.HourglassEmpty
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.StopCircle
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-/**
- * WorkflowLabScreen:
- * Autonomous Multi-Step Problem Solving & DAG Task Runner.
- * Executes and visualizes complex real-world workflows on Android.
- */
+private enum class WorkflowStatus { WAITING, RUNNING, COMPLETE, STOPPED }
+private data class WorkflowStep(val title: String, val description: String, val status: WorkflowStatus = WorkflowStatus.WAITING)
+
+/** Workflow planning UI. Execution uses a cancelable UI job so stopping a plan immediately halts local progress state. */
 @Composable
-fun WorkflowLabScreen(
-    onBack: () -> Unit
-) {
-    val coroutineScope = rememberCoroutineScope()
-    var promptInput by remember { mutableStateOf("") }
-    var isExecuting by remember { mutableStateOf(false) }
-
-    data class TaskStep(val title: String, var status: String)
-
-    val currentSteps = remember {
+fun WorkflowLabScreen(onBack: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    var prompt by remember { mutableStateOf("") }
+    var executionJob by remember { mutableStateOf<Job?>(null) }
+    val steps = remember {
         mutableStateListOf(
-            TaskStep("1. Parse user intent & extract entities", "SUCCESS"),
-            TaskStep("2. Locate target application / storage path", "RUNNING"),
-            TaskStep("3. Inspect UI hierarchy via Accessibility API", "PENDING"),
-            TaskStep("4. Dispatch physical touch & text input", "PENDING"),
-            TaskStep("5. Verify task completion & speak feedback", "PENDING")
+            WorkflowStep("Understand", "Read the request and establish constraints"),
+            WorkflowStep("Prepare", "Locate only the apps and permissions needed"),
+            WorkflowStep("Confirm", "Keep sensitive actions behind an approval gate"),
+            WorkflowStep("Execute", "Perform the approved action in sequence"),
+            WorkflowStep("Verify", "Check outcome and return a clear result")
         )
     }
+    val isRunning = executionJob?.isActive == true
 
-    val sampleTasks = listOf(
-        "Message Rohit on WhatsApp saying I'll reach in 15 minutes",
-        "Find latest electricity bill PDF in Downloads and extract due date",
-        "Compare Uber vs Ola cab fares to Airport",
-        "Scaffold habit tracker Compose app into Documents",
-        "Start 45-min Deep Study Mode & block Instagram"
-    )
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(Color(0xFF020617), Color(0xFF0F172A), Color(0xFF020617))
-                )
-            )
-            .padding(16.dp)
-    ) {
-        // Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+    fun stopWorkflow() {
+        executionJob?.cancel()
+        executionJob = null
+        steps.indices.forEach { index ->
+            if (steps[index].status == WorkflowStatus.RUNNING) {
+                steps[index] = steps[index].copy(status = WorkflowStatus.STOPPED)
             }
-            Text("WORKFLOW & DAG LAB", color = Color(0xFF00F0FF), fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }
+    }
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Prompt Input Field
-        OutlinedTextField(
-            value = promptInput,
-            onValueChange = { promptInput = it },
-            placeholder = { Text("What task should ShivAI execute?", color = Color(0xFF64748B)) },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
-            trailingIcon = {
-                IconButton(onClick = {
-                    if (promptInput.isNotBlank()) {
-                        isExecuting = true
-                        coroutineScope.launch {
-                            for (i in currentSteps.indices) {
-                                currentSteps[i] = currentSteps[i].copy(status = "RUNNING")
-                                delay(1200)
-                                currentSteps[i] = currentSteps[i].copy(status = "SUCCESS")
-                            }
-                            isExecuting = false
-                        }
-                    }
-                }) {
-                    Icon(Icons.Default.PlayArrow, contentDescription = "Run", tint = Color(0xFF00F0FF))
+    fun runWorkflow() {
+        if (prompt.isBlank() || isRunning) return
+        steps.indices.forEach { index -> steps[index] = steps[index].copy(status = WorkflowStatus.WAITING) }
+        executionJob = scope.launch {
+            try {
+                steps.indices.forEach { index ->
+                    steps[index] = steps[index].copy(status = WorkflowStatus.RUNNING)
+                    delay(650)
+                    steps[index] = steps[index].copy(status = WorkflowStatus.COMPLETE)
                 }
-            },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
-                focusedBorderColor = Color(0xFF00F0FF),
-                unfocusedBorderColor = Color(0xFF334155)
-            )
-        )
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // Pre-made Prompt Chips
-        Text("PRE-BUILT REAL-WORLD WORKFLOWS", color = Color(0xFF64748B), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(6.dp))
-        sampleTasks.take(3).forEach { sample ->
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 3.dp)
-                    .clickable { promptInput = sample },
-                shape = RoundedCornerShape(10.dp),
-                color = Color(0xFF1E293B)
-            ) {
-                Text(sample, color = Color(0xFF38BDF8), fontSize = 11.sp, modifier = Modifier.padding(10.dp))
+            } finally {
+                executionJob = null
             }
         }
+    }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Live DAG Execution View
-        Text("AUTONOMOUS EXECUTION DAG", color = Color(0xFF64748B), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(8.dp))
-
-        LazyColumn(modifier = Modifier.weight(1f)) {
-            items(currentSteps) { step ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A)),
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        when (step.status) {
-                            "SUCCESS" -> Color(0xFF10B981)
-                            "RUNNING" -> Color(0xFF00F0FF)
-                            else -> Color(0xFF334155)
-                        }
+    CompanionBackground {
+        LazyColumn(
+            modifier = Modifier.padding(horizontal = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            item { Spacer(Modifier.height(12.dp)) }
+            item { CompanionTopBar("Workflow Lab", "Plan a safe, auditable automation", onBack) }
+            item {
+                CompanionSurface(accent = CompanionPalette.Cyan) {
+                    Text("What would you like ShivAI to do?", color = CompanionPalette.Text, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(10.dp))
+                    OutlinedTextField(
+                        value = prompt,
+                        onValueChange = { prompt = it },
+                        placeholder = { Text("Describe a task in plain language") },
+                        minLines = 3,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = CompanionPalette.Text,
+                            unfocusedTextColor = CompanionPalette.Text,
+                            focusedBorderColor = CompanionPalette.Cyan,
+                            unfocusedBorderColor = CompanionPalette.Line,
+                            cursorColor = CompanionPalette.Cyan
+                        )
                     )
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(step.title, color = Color.White, fontSize = 12.sp)
-                        when (step.status) {
-                            "SUCCESS" -> Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF10B981), modifier = Modifier.size(16.dp))
-                            "RUNNING" -> CircularProgressIndicator(color = Color(0xFF00F0FF), modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                            else -> Icon(Icons.Default.HourglassEmpty, contentDescription = null, tint = Color(0xFF64748B), modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.height(12.dp))
+                    CompanionPrimaryButton(
+                        text = if (isRunning) "Workflow running" else "Build workflow",
+                        icon = Icons.Default.PlayArrow,
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = prompt.isNotBlank() && !isRunning,
+                        onClick = ::runWorkflow
+                    )
+                }
+            }
+            item { CompanionSectionLabel("Suggested starts") }
+            item {
+                val ideas = listOf(
+                    "Build a focused 45-minute study session",
+                    "Find my latest electricity bill",
+                    "Prepare a morning briefing"
+                )
+                CompanionSurface(contentPadding = androidx.compose.foundation.layout.PaddingValues(8.dp)) {
+                    ideas.forEach { idea ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().clickable { prompt = idea }.padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.PlayArrow, contentDescription = null, tint = CompanionPalette.Violet, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(9.dp))
+                            Text(idea, color = CompanionPalette.Muted, fontSize = 12.sp)
                         }
                     }
                 }
             }
+            item { CompanionSectionLabel("Execution plan") }
+            items(steps.size) { index -> WorkflowStepRow(steps[index]) }
+            item {
+                CompanionSurface(accent = CompanionPalette.Red, onClick = ::stopWorkflow) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.StopCircle, contentDescription = null, tint = CompanionPalette.Red)
+                        Spacer(Modifier.width(10.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Stop workflow", color = CompanionPalette.Text, fontWeight = FontWeight.SemiBold)
+                            Text("Cancel unfinished local steps immediately", color = CompanionPalette.Muted, fontSize = 12.sp)
+                        }
+                        if (isRunning) CompanionStatusPill("Stop", CompanionPalette.Red)
+                    }
+                }
+            }
+            item { Spacer(Modifier.height(28.dp)) }
         }
+    }
+}
 
-        // Safety Kill Switch
-        Button(
-            onClick = { isExecuting = false },
-            modifier = Modifier.fillMaxWidth().height(46.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626))
-        ) {
-            Icon(Icons.Default.StopCircle, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("EMERGENCY KILL SWITCH", fontWeight = FontWeight.Bold, color = Color.White)
+@Composable
+private fun WorkflowStepRow(step: WorkflowStep) {
+    val (color, icon, label) = when (step.status) {
+        WorkflowStatus.WAITING -> Triple(CompanionPalette.Quiet, Icons.Default.HourglassEmpty, "Queued")
+        WorkflowStatus.RUNNING -> Triple(CompanionPalette.Cyan, Icons.Default.PlayArrow, "Working")
+        WorkflowStatus.COMPLETE -> Triple(CompanionPalette.Green, Icons.Default.CheckCircle, "Complete")
+        WorkflowStatus.STOPPED -> Triple(CompanionPalette.Red, Icons.Default.Warning, "Stopped")
+    }
+    CompanionSurface(accent = color) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(22.dp))
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(step.title, color = CompanionPalette.Text, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                Text(step.description, color = CompanionPalette.Muted, fontSize = 11.sp)
+            }
+            CompanionStatusPill(label, color)
         }
     }
 }

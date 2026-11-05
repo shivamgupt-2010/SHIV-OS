@@ -1,30 +1,48 @@
 package com.example.companion.ui
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.RecordVoiceOver
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.companion.avatar.*
-import com.example.companion.voice.WakeWordConfig
+import com.example.companion.avatar.AvatarRenderContext
+import com.example.companion.avatar.AvatarState
+import com.example.companion.avatar.AvatarType
+import com.example.companion.avatar.PremiumAvatar3DScene
+import com.example.companion.avatar.SeasonalSkin
 
 /**
- * PersonaStudioScreen:
- * Customization Studio for Avatar Personas, Neural Voices,
- * Wake Word Sensitivity ("Om Namas Shivaya"), and Seasonal Skins.
+ * A non-destructive studio. Selecting an avatar prepares the scene for the
+ * command deck; it does not unexpectedly start the system overlay service.
  */
 @Composable
 fun PersonaStudioScreen(
@@ -32,178 +50,211 @@ fun PersonaStudioScreen(
     onAvatarSelected: (AvatarType) -> Unit,
     onBack: () -> Unit
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    var selectedVoice by remember { mutableStateOf("hi-IN-MadhurNeural") }
-    var wakeWordSensitivity by remember { mutableFloatStateOf(0.85f) }
+    var selectedVoice by remember { mutableStateOf("Madhur") }
+    var wakeWordSensitivity by remember { mutableFloatStateOf(0.78f) }
     var selectedSkin by remember { mutableStateOf(SeasonalSkin.DEFAULT) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(Color(0xFF020617), Color(0xFF0F172A), Color(0xFF020617))
+    CompanionBackground {
+        LazyColumn(
+            modifier = Modifier.padding(horizontal = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            item { Spacer(Modifier.height(12.dp)) }
+            item {
+                CompanionTopBar(
+                    title = "Persona Studio",
+                    subtitle = "Shape your companion's presence",
+                    onBack = onBack
                 )
-            )
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState())
+            }
+            item { CompanionSectionLabel("Active companion") }
+            item {
+                AvatarHeroPreview(currentAvatar = currentAvatar, skin = selectedSkin)
+            }
+            item { CompanionSectionLabel("Choose a persona") }
+            item {
+                AvatarType.entries.forEach { avatar ->
+                    PersonaChoice(
+                        avatar = avatar,
+                        selected = avatar == currentAvatar,
+                        onClick = { onAvatarSelected(avatar) }
+                    )
+                    Spacer(Modifier.height(10.dp))
+                }
+            }
+            item { CompanionSectionLabel("Voice and wake word") }
+            item {
+                WakeWordControl(
+                    sensitivity = wakeWordSensitivity,
+                    onSensitivityChanged = { wakeWordSensitivity = it }
+                )
+            }
+            item {
+                VoicePicker(
+                    selectedVoice = selectedVoice,
+                    onVoiceSelected = { selectedVoice = it }
+                )
+            }
+            item { CompanionSectionLabel("Scene atmosphere") }
+            item {
+                SkinPicker(selectedSkin = selectedSkin, onSkinSelected = { selectedSkin = it })
+            }
+            item { Spacer(Modifier.height(28.dp)) }
+        }
+    }
+}
+
+@Composable
+private fun AvatarHeroPreview(currentAvatar: AvatarType, skin: SeasonalSkin) {
+    CompanionSurface(
+        modifier = Modifier.fillMaxWidth(),
+        accent = CompanionPalette.Violet,
+        contentPadding = PaddingValues(0.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
-            }
-            Text("PERSONA & VOICE STUDIO", color = Color(0xFF00F0FF), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // 1. Avatar Persona Selection (The 3 Core Personas)
-        Text("SELECT ACTIVE AVATAR", color = Color(0xFF64748B), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(8.dp))
-
-        AvatarType.values().forEach { avatar ->
-            val isSelected = avatar == currentAvatar
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp)
-                    .clickable {
-                        onAvatarSelected(avatar)
-                        com.example.companion.overlay.FloatingAvatarService.start(context, avatar)
-                    },
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (isSelected) Color(0xFF1E293B) else Color(0xFF0F172A)
+        Box(modifier = Modifier.fillMaxWidth().height(248.dp), contentAlignment = Alignment.Center) {
+            PremiumAvatar3DScene(
+                renderContext = AvatarRenderContext(
+                    avatarType = currentAvatar,
+                    state = AvatarState.IDLE,
+                    seasonalSkin = skin
                 ),
-                border = androidx.compose.foundation.BorderStroke(
-                    1.2.dp,
-                    if (isSelected) Color(0xFF00F0FF) else Color(0xFF1E293B)
-                )
-            ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(modifier = Modifier.size(54.dp)) {
-                        val ctx = AvatarRenderContext(avatarType = avatar)
-                        when (avatar) {
-                            AvatarType.INDIE_CACOONAUT -> IndieCacoonautRenderer(ctx)
-                            AvatarType.PHANTOM_NEKO -> PhantomNekoRenderer(ctx)
-                            AvatarType.COSMIC_SHIV -> CosmicShivRenderer(ctx)
-                        }
-                    }
-                    Spacer(modifier = Modifier.width(14.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(avatar.title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        Text(avatar.subtitle, color = Color(0xFF94A3B8), fontSize = 11.sp)
-                    }
-                    if (isSelected) {
-                        Icon(Icons.Default.Check, contentDescription = null, tint = Color(0xFF00F0FF))
-                    }
-                }
-            }
+                modifier = Modifier.size(206.dp)
+            )
+            CompanionStatusPill(
+                label = "Selected",
+                color = CompanionPalette.Violet,
+                modifier = Modifier.align(Alignment.TopEnd).padding(14.dp),
+                leading = Icons.Default.Check
+            )
+            Text(
+                text = currentAvatar.title,
+                color = CompanionPalette.Text,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.align(Alignment.BottomStart).padding(18.dp)
+            )
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // 2. Default Wake Word Settings
-        Text("WAKE WORD CONFIGURATION", color = Color(0xFF64748B), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A)),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF334155))
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text("Default Sacred Wake Word:", color = Color(0xFF94A3B8), fontSize = 11.sp)
-                Text(
-                    text = "\"Om Namas Shivaya\" (ॐ नमः शिवाय)",
-                    color = Color(0xFF38BDF8),
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 2.dp)
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text("Wake Word Sensitivity (${(wakeWordSensitivity * 100).toInt()}%)", color = Color(0xFFE2E8F0), fontSize = 12.sp)
-                Slider(
-                    value = wakeWordSensitivity,
-                    onValueChange = { wakeWordSensitivity = it },
-                    colors = SliderDefaults.colors(thumbColor = Color(0xFF00F0FF), activeTrackColor = Color(0xFF0284C7))
+@Composable
+private fun PersonaChoice(avatar: AvatarType, selected: Boolean, onClick: () -> Unit) {
+    CompanionSurface(
+        modifier = Modifier.fillMaxWidth(),
+        accent = if (selected) CompanionPalette.Cyan else CompanionPalette.Line,
+        contentPadding = PaddingValues(12.dp),
+        onClick = onClick
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(modifier = Modifier.size(62.dp), contentAlignment = Alignment.Center) {
+                PremiumAvatar3DScene(
+                    renderContext = AvatarRenderContext(
+                        avatarType = avatar,
+                        state = if (selected) AvatarState.IDLE else AvatarState.DROWSY
+                    ),
+                    modifier = Modifier.size(56.dp)
                 )
             }
+            Spacer(Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(avatar.title, color = CompanionPalette.Text, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                Text(avatar.subtitle, color = CompanionPalette.Muted, fontSize = 11.sp, lineHeight = 14.sp)
+            }
+            if (selected) {
+                Icon(Icons.Default.Check, contentDescription = "Selected", tint = CompanionPalette.Cyan)
+            }
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(20.dp))
+@Composable
+private fun WakeWordControl(sensitivity: Float, onSensitivityChanged: (Float) -> Unit) {
+    CompanionSurface(accent = CompanionPalette.Cyan) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.Mic, contentDescription = null, tint = CompanionPalette.Cyan)
+            Spacer(Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Om Namas Shivaya", color = CompanionPalette.Text, fontWeight = FontWeight.SemiBold)
+                Text("Offline wake word, calibrated locally", color = CompanionPalette.Muted, fontSize = 12.sp)
+            }
+            CompanionStatusPill("On device", CompanionPalette.Green)
+        }
+        Spacer(Modifier.height(18.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("Sensitivity", color = CompanionPalette.Muted, fontSize = 12.sp)
+            Text("${(sensitivity * 100).toInt()}%", color = CompanionPalette.Cyan, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+        }
+        Slider(
+            value = sensitivity,
+            onValueChange = onSensitivityChanged,
+            colors = SliderDefaults.colors(
+                thumbColor = CompanionPalette.Cyan,
+                activeTrackColor = CompanionPalette.Cyan,
+                inactiveTrackColor = CompanionPalette.Line
+            )
+        )
+    }
+}
 
-        // 3. Neural Voice Selection
-        Text("NEURAL VOICE MODEL", color = Color(0xFF64748B), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(8.dp))
-
-        listOf(
-            "hi-IN-MadhurNeural" to "Madhur (Warm Natural Hindi)",
-            "en-IN-PrabhatNeural" to "Prabhat (Natural Indian English)",
-            "en-GB-RyanNeural" to "Jarvis (British Butler AI)"
-        ).forEach { (voiceId, label) ->
-            val isSelected = selectedVoice == voiceId
-            Surface(
+@Composable
+private fun VoicePicker(selectedVoice: String, onVoiceSelected: (String) -> Unit) {
+    val choices = listOf(
+        "Madhur" to "Warm Hindi and bilingual guidance",
+        "Prabhat" to "Clear Indian English companion",
+        "Aarav" to "Calm, deliberate coaching voice"
+    )
+    CompanionSurface {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.RecordVoiceOver, contentDescription = null, tint = CompanionPalette.Violet)
+            Spacer(Modifier.width(10.dp))
+            Column {
+                Text("Voice character", color = CompanionPalette.Text, fontWeight = FontWeight.SemiBold)
+                Text("Select the speaking profile", color = CompanionPalette.Muted, fontSize = 12.sp)
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        choices.forEachIndexed { index, (name, detail) ->
+            val selected = name == selectedVoice
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 3.dp)
-                    .clickable { selectedVoice = voiceId },
-                shape = RoundedCornerShape(12.dp),
-                color = if (isSelected) Color(0xFF1E293B) else Color(0xFF0F172A),
-                border = androidx.compose.foundation.BorderStroke(
-                    1.dp,
-                    if (isSelected) Color(0xFF38BDF8) else Color(0xFF1E293B)
-                )
+                    .clickable { onVoiceSelected(name) }
+                    .padding(vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier.padding(12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(label, color = if (isSelected) Color.White else Color(0xFF94A3B8), fontSize = 12.sp)
-                    if (isSelected) Icon(Icons.Default.Check, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(16.dp))
+                CompanionStatusPill(if (selected) "Active" else "", if (selected) CompanionPalette.Violet else CompanionPalette.Line)
+                Spacer(Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(name, color = if (selected) CompanionPalette.Text else CompanionPalette.Muted, fontWeight = FontWeight.Medium, fontSize = 13.sp)
+                    Text(detail, color = CompanionPalette.Quiet, fontSize = 11.sp)
                 }
+                if (selected) Icon(Icons.Default.GraphicEq, contentDescription = null, tint = CompanionPalette.Violet, modifier = Modifier.size(18.dp))
             }
+            if (index < choices.lastIndex) MeterBar(1f, CompanionPalette.Line)
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // 4. Seasonal Skin Selector
-        Text("SEASONAL & ATMOSPHERIC SKINS", color = Color(0xFF64748B), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(8.dp))
-
-        SeasonalSkin.values().forEach { skin ->
-            val isSelected = selectedSkin == skin
-            Surface(
+@Composable
+private fun SkinPicker(selectedSkin: SeasonalSkin, onSkinSelected: (SeasonalSkin) -> Unit) {
+    CompanionSurface {
+        SeasonalSkin.entries.forEachIndexed { index, skin ->
+            val selected = skin == selectedSkin
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 3.dp)
-                    .clickable { selectedSkin = skin },
-                shape = RoundedCornerShape(12.dp),
-                color = if (isSelected) Color(0xFF1E293B) else Color(0xFF0F172A),
-                border = androidx.compose.foundation.BorderStroke(
-                    1.dp,
-                    if (isSelected) Color(0xFFF59E0B) else Color(0xFF1E293B)
-                )
+                    .clickable { onSkinSelected(skin) }
+                    .padding(vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier.padding(12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(skin.title, color = if (isSelected) Color(0xFFFBBF24) else Color(0xFF94A3B8), fontSize = 12.sp)
-                    if (isSelected) Icon(Icons.Default.Check, contentDescription = null, tint = Color(0xFFF59E0B), modifier = Modifier.size(16.dp))
-                }
+                CompanionStatusPill(
+                    label = if (selected) "Active" else "",
+                    color = if (selected) CompanionPalette.Amber else CompanionPalette.Line
+                )
+                Spacer(Modifier.width(10.dp))
+                Text(skin.title, color = if (selected) CompanionPalette.Text else CompanionPalette.Muted, modifier = Modifier.weight(1f), fontSize = 13.sp)
+                if (selected) Icon(Icons.Default.Check, contentDescription = null, tint = CompanionPalette.Amber, modifier = Modifier.size(18.dp))
             }
+            if (index < SeasonalSkin.entries.lastIndex) MeterBar(1f, CompanionPalette.Line)
         }
     }
 }

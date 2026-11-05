@@ -289,8 +289,24 @@ class AppContainer(private val context: Context) {
         com.example.ai.memory.lifecycle.MemoryLifecycleSystem(semanticMemoryRepository, memoryCompressionEngine)
     }
 
+    val selfEvolvingNeuroplasticityEngine: com.example.ai.memory.personalization.SelfEvolvingNeuroplasticityEngine by lazy {
+        com.example.ai.memory.personalization.SelfEvolvingNeuroplasticityEngine(context, appDatabase.userPreferencesDao(), appScope)
+    }
+
+    val locationAwareIdentityProxy: com.example.companion.context.LocationAwareIdentityProxy by lazy {
+        com.example.companion.context.LocationAwareIdentityProxy(context, appDatabase.userPreferencesDao(), appScope)
+    }
+
+    val agentMeshRelayManager: com.example.companion.mesh.AgentMeshRelayManager by lazy {
+        com.example.companion.mesh.AgentMeshRelayManager(context, appDatabase.userPreferencesDao(), appScope)
+    }
+
+    val strictCoachAgent: com.example.companion.personas.StrictCoachAgent by lazy {
+        com.example.companion.personas.StrictCoachAgent(context, appScope)
+    }
+
     val adaptivePersonalizationEngine: com.example.ai.memory.personalization.AdaptivePersonalizationEngine by lazy {
-        com.example.ai.memory.personalization.AdaptivePersonalizationEngine(semanticMemoryRepository, embeddingProvider)
+        com.example.ai.memory.personalization.AdaptivePersonalizationEngine(semanticMemoryRepository, embeddingProvider, selfEvolvingNeuroplasticityEngine)
     }
 
     val memorySecurityProvider: com.example.ai.memory.security.MemorySecurityProvider by lazy {

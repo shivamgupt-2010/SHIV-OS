@@ -38,7 +38,11 @@ fun FloatingCompanionOverlay(
     activeTaskTitle: String?,
     onAvatarTapped: () -> Unit,
     onDragDelta: (Float, Float) -> Unit,
-    onEmergencyStop: () -> Unit
+    onEmergencyStop: () -> Unit,
+    onActionAI: () -> Unit = onAvatarTapped,
+    onActionCode: () -> Unit = onAvatarTapped,
+    onActionMedia: () -> Unit = onAvatarTapped,
+    onActionWeb: () -> Unit = onAvatarTapped
 ) {
     var isDockExpanded by remember { mutableStateOf(false) }
 
@@ -144,16 +148,16 @@ fun FloatingCompanionOverlay(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             DockActionButton(icon = Icons.Default.AutoAwesome, tint = accentColor, label = "AI") {
-                                onAvatarTapped()
+                                onActionAI()
                             }
                             DockActionButton(icon = Icons.Default.Code, tint = Color(0xFF38BDF8), label = "Code") {
-                                onAvatarTapped()
+                                onActionCode()
                             }
                             DockActionButton(icon = Icons.Default.PlayArrow, tint = Color(0xFFA855F7), label = "Media") {
-                                onAvatarTapped()
+                                onActionMedia()
                             }
                             DockActionButton(icon = Icons.Default.Language, tint = Color(0xFF34D399), label = "Web") {
-                                onAvatarTapped()
+                                onActionWeb()
                             }
                             DockActionButton(icon = Icons.Default.StopCircle, tint = Color(0xFFEF4444), label = "Stop") {
                                 onEmergencyStop()

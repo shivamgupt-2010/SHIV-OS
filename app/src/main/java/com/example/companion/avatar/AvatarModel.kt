@@ -6,8 +6,8 @@ package com.example.companion.avatar
  * situational reactions, and physical UI touch mechanics.
  */
 enum class AvatarType(val title: String, val subtitle: String) {
-    INDIE_CACOONAUT("Indie Cacoonaut", "The Sacred Cocoon & Celestial Diya Spirit"),
-    PHANTOM_NEKO("Phantom Neko", "The Mystic Fox-Cat & Neon Specter"),
+    INDIE_CACOONAUT("Diya Spirit", "A warm Indian-inspired companion with a living diya and cocoon form"),
+    PHANTOM_NEKO("Phantom Neko", "A celestial cat that becomes a playful blue specter in motion"),
     COSMIC_SHIV("Authentic Cosmic Shiv", "The Sovereign Cyber-Celestial Spirit")
 }
 
