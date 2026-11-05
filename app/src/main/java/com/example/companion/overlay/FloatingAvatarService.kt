@@ -70,33 +70,12 @@ class FloatingAvatarService : Service() {
     private lateinit var voiceEngine: ShivVoiceEngine
     private lateinit var sleepGovernor: InactivitySleepGovernor
 
-    private val customLifecycleOwner = object : LifecycleOwner, ViewModelStoreOwner, SavedStateRegistryOwner {
-        private val lifecycleRegistry = LifecycleRegistry(this)
-        private val controller = SavedStateRegistryController.create(this)
-        private val store = ViewModelStore()
-
-        init {
-            lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
-            controller.performRestore(null)
-        }
-
-        override val lifecycle: Lifecycle get() = lifecycleRegistry
-        override val viewModelStore: ViewModelStore get() = store
-        override val savedStateRegistry: SavedStateRegistry get() = controller.savedStateRegistry
-
-        fun start() {
-            lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
-            lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
-        }
-
-        fun destroy() {
-            lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-            store.clear()
-        }
-    }
+    private val customLifecycleOwner = OverlayLifecycleOwner()
 
     override fun onCreate() {
         super.onCreate()
+        customLifecycleOwner.onCreate()
+        customLifecycleOwner.start()
         createNotificationChannel()
         startForeground(NOTIFICATION_ID, buildForegroundNotification())
 
@@ -310,4 +289,32 @@ class FloatingAvatarService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+}
+
+class OverlayLifecycleOwner : LifecycleOwner, ViewModelStoreOwner, SavedStateRegistryOwner {
+    private val lifecycleRegistry = LifecycleRegistry(this)
+    private val savedStateRegistryController = SavedStateRegistryController.create(this)
+    private val store = ViewModelStore()
+
+    override val lifecycle: Lifecycle get() = lifecycleRegistry
+    override val viewModelStore: ViewModelStore get() = store
+    override val savedStateRegistry: SavedStateRegistry get() = savedStateRegistryController.savedStateRegistry
+
+    fun onCreate() {
+        savedStateRegistryController.performAttach()
+        savedStateRegistryController.performRestore(null)
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
+    }
+
+    fun start() {
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
+    }
+
+    fun destroy() {
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+        store.clear()
+    }
 }
