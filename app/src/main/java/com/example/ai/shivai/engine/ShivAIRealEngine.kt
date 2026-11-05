@@ -24,23 +24,17 @@ import java.util.concurrent.TimeUnit
  */
 class ShivAIRealEngine(
     private val context: Context,
-    private val groqApiKey: String = getGroqKey()
+    private val preferences: com.example.ai.shivai.config.ShivAIPreferences = com.example.ai.shivai.config.ShivAIPreferences(context)
 ) {
-    companion object {
-        fun getGroqKey(): String {
-            val bytes = byteArrayOf(37, 49, 41, 29, 18, 47, 33, 37, 6, 44, 0, 27, 22, 36, 46, 11, 118, 37, 39, 47, 16, 47, 44, 58, 21, 5, 38, 59, 32, 113, 4, 27, 35, 41, 116, 22, 15, 10, 52, 21, 122, 35, 113, 59, 26, 24, 38, 115, 33, 123, 15, 4, 37, 9, 37, 115)
-            return bytes.map { (it.toInt() xor 0x42).toByte() }.toByteArray().decodeToString()
-        }
-    }
     private val client = OkHttpClient.Builder()
-        .connectTimeout(20, TimeUnit.SECONDS)
+        .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)
         .build()
 
-    private val primaryModel = "openai/gpt-oss-120b"
-    private val fallbackModel = "openai/gpt-oss-20b"
-    private val reasoningModel = "qwen/qwen3.8-27b"
+    private val primaryModel = "shiv-ai-sovereign"
+    private val fallbackModel = "shiv-ai-sovereign"
+    private val reasoningModel = "shiv-ai-sovereign"
 
     private val systemPrompt = """
         You are ShivAI, the high-performance cognitive AI companion and operating system intelligence of SHIV-OS Launcher.
@@ -178,9 +172,12 @@ class ShivAIRealEngine(
                 put("max_tokens", 4096)
             }
 
+            val baseUrl = preferences.getBaseUrl().trimEnd('/')
+            val apiKey = preferences.getApiKey()
             val request = Request.Builder()
-                .url("https://api.groq.com/openai/v1/chat/completions")
-                .header("Authorization", "Bearer $groqApiKey")
+                .url("$baseUrl/v1/chat/completions")
+                .header("x-api-key", apiKey)
+                .header("X-API-Key", apiKey)
                 .header("Content-Type", "application/json")
                 .header("User-Agent", "SHIV-OS/1.0")
                 .post(payload.toString().toRequestBody("application/json".toMediaType()))
@@ -201,8 +198,8 @@ class ShivAIRealEngine(
                         Result.Error(Exception("Empty response received from ShivAI model"))
                     }
                 } else {
-                    Logger.e("Groq API error ($model): ${response.code} $bodyStr")
-                    Result.Error(Exception("Groq error: ${response.code}"))
+                    Logger.e("ShivAI Server error ($model): ${response.code} $bodyStr")
+                    Result.Error(Exception("ShivAI error: ${response.code}"))
                 }
             }
         } catch (e: Exception) {
@@ -212,33 +209,105 @@ class ShivAIRealEngine(
     }
 
     /**
-     * Streams ShivAI tokens or emits result cleanly for real-time chat.
+     * Streams ShivAI tokens in real-time via SSE line-by-line parsing.
      */
     fun chatStream(
         prompt: String,
         conversationHistory: List<Pair<String, String>> = emptyList()
     ): Flow<Result<String>> = flow {
-        // We emit progress or the completed text in chunks
-        val fullResult = chat(prompt, conversationHistory)
-        when (fullResult) {
-            is Result.Success -> {
-                // Chunk into realistic streaming tokens for smooth animated UI display
-                val fullText = fullResult.data
-                val words = fullText.split(" ")
-                val chunkSize = 4
-                var idx = 0
-                while (idx < words.size) {
-                    val end = (idx + chunkSize).coerceAtMost(words.size)
-                    val chunk = words.subList(idx, end).joinToString(" ") + (if (end < words.size) " " else "")
-                    emit(Result.Success(chunk))
-                    kotlinx.coroutines.delay(40L)
-                    idx = end
+        var streamedAny = false
+        try {
+            val messagesArray = JSONArray()
+
+            // System prompt
+            messagesArray.put(JSONObject().apply {
+                put("role", "system")
+                put("content", systemPrompt)
+            })
+
+            val historySlice = if (conversationHistory.size > 10) conversationHistory.takeLast(10) else conversationHistory
+            for ((role, content) in historySlice) {
+                messagesArray.put(JSONObject().apply {
+                    put("role", if (role == "user") "user" else "assistant")
+                    put("content", content)
+                })
+            }
+
+            messagesArray.put(JSONObject().apply {
+                put("role", "user")
+                put("content", prompt)
+            })
+
+            val payload = JSONObject().apply {
+                put("model", primaryModel)
+                put("messages", messagesArray)
+                put("temperature", 0.7)
+                put("max_tokens", 4096)
+                put("stream", true)
+            }
+
+            val baseUrl = preferences.getBaseUrl().trimEnd('/')
+            val apiKey = preferences.getApiKey()
+            val request = Request.Builder()
+                .url("$baseUrl/v1/chat/completions")
+                .header("x-api-key", apiKey)
+                .header("X-API-Key", apiKey)
+                .header("Content-Type", "application/json")
+                .header("User-Agent", "SHIV-OS/1.0")
+                .post(payload.toString().toRequestBody("application/json".toMediaType()))
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                if (response.isSuccessful) {
+                    val source = response.body?.source()
+                    if (source != null) {
+                        while (!source.exhausted()) {
+                            val line = source.readUtf8Line() ?: break
+                            val trimmed = line.trim()
+                            if (trimmed.startsWith("data: ") && trimmed != "data: [DONE]") {
+                                val jsonStr = trimmed.removePrefix("data: ").trim()
+                                try {
+                                    val chunkObj = JSONObject(jsonStr)
+                                    val delta = chunkObj.optJSONArray("choices")
+                                        ?.optJSONObject(0)
+                                        ?.optJSONObject("delta")
+                                        ?.optString("content", "")
+                                    if (!delta.isNullOrEmpty()) {
+                                        emit(Result.Success(delta))
+                                        streamedAny = true
+                                    }
+                                } catch (e: Exception) {
+                                    // ignore line parse errors
+                                }
+                            }
+                        }
+                    }
                 }
             }
-            is Result.Error -> {
-                emit(fullResult)
+        } catch (e: Exception) {
+            Logger.e("ShivAI streaming error, attempting fallback", e)
+        }
+
+        if (!streamedAny) {
+            // Fallback to non-streaming chat with animated word display
+            val fullResult = chat(prompt, conversationHistory)
+            when (fullResult) {
+                is Result.Success -> {
+                    val fullText = fullResult.data
+                    val words = fullText.split(" ")
+                    val chunkSize = 4
+                    var idx = 0
+                    while (idx < words.size) {
+                        val end = (idx + chunkSize).coerceAtMost(words.size)
+                        val chunk = words.subList(idx, end).joinToString(" ") + (if (end < words.size) " " else "")
+                        emit(Result.Success(chunk))
+                        kotlinx.coroutines.delay(40L)
+                        idx = end
+                    }
+                }
+                is Result.Error -> emit(fullResult)
+                else -> {}
             }
-            else -> {}
         }
     }.flowOn(Dispatchers.IO)
 }

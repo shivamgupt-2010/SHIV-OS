@@ -42,7 +42,10 @@ class ShivAIClient(
 
         if (apiKey.isNotBlank()) {
             builder.header("X-API-Key", apiKey)
-            builder.header("Authorization", "Bearer $apiKey")
+            builder.header("x-api-key", apiKey)
+            if (apiKey.contains(".") && apiKey.split(".").size >= 3) {
+                builder.header("Authorization", "Bearer $apiKey")
+            }
         }
         chain.proceed(builder.build())
     }

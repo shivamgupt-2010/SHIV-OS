@@ -243,8 +243,8 @@ class DatabaseClient(
 // =========================================================================
 
 class ShivAIClient(
-    val apiKey: String = "shivai_launcher_auth_key_v1",
-    val baseUrl: String = "https://real-shivai.onrender.com"
+    val apiKey: String = "shivai-production-key-2026",
+    val baseUrl: String = "https://shiv-aiserver.onrender.com"
 ) {
     private val sanitizedBaseUrl = baseUrl.trimEnd('/')
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
@@ -271,8 +271,13 @@ class ShivAIClient(
                     val reqBuilder = Request.Builder().url(fullUrl)
                         .header("Content-Type", "application/json")
                         .header("Accept", "application/json")
-                        .header("Authorization", "Bearer $apiKey")
+                        .header("X-API-Key", apiKey)
+                        .header("x-api-key", apiKey)
                         .header("User-Agent", "SHIV-OS-Launcher/2.0")
+
+                    if (apiKey.contains(".") && apiKey.split(".").size >= 3) {
+                        reqBuilder.header("Authorization", "Bearer $apiKey")
+                    }
 
                     // Inject user identity token if authenticated
                     ShivIdentityAuth.accessToken?.let { userToken ->
