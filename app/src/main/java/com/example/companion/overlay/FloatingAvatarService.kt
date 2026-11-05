@@ -53,7 +53,7 @@ class FloatingAvatarService : Service() {
 
     private var windowManager: WindowManager? = null
     private var composeView: ComposeView? = null
-    private var layoutParams: WindowManager.LayoutParams? = null
+    private var windowLayoutParams: WindowManager.LayoutParams? = null
 
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
@@ -177,7 +177,7 @@ class FloatingAvatarService : Service() {
             WindowManager.LayoutParams.TYPE_PHONE
         }
 
-        layoutParams = WindowManager.LayoutParams(
+        windowLayoutParams = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             overlayType,
@@ -210,10 +210,12 @@ class FloatingAvatarService : Service() {
                     },
                     onDragDelta = { dx, dy ->
                         sleepGovernor.reportUserActivity()
-                        layoutParams?.let { lp ->
+                        windowLayoutParams?.let { lp ->
                             lp.x += dx.toInt()
                             lp.y += dy.toInt()
-                            windowManager?.updateViewLayout(this@apply, lp)
+                            composeView?.let { cv ->
+                                windowManager?.updateViewLayout(cv, lp)
+                            }
                         }
                     },
                     onEmergencyStop = {
@@ -226,7 +228,7 @@ class FloatingAvatarService : Service() {
         }
 
         customLifecycleOwner.start()
-        windowManager?.addView(composeView, layoutParams)
+        windowManager?.addView(composeView, windowLayoutParams)
     }
 
     private fun createNotificationChannel() {
